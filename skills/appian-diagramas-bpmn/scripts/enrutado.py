@@ -1806,3 +1806,81 @@ def salir_por_lado_libre(proc, geo, tam, cabecera):
         if not cambio:
             break
     return geo
+
+
+def separar_pegados(proc, geo, tam, cabecera):
+    """Última pasada: dos flujos que van en paralelo a menos de HUECO se leen como uno. Se corre de lado un tramo
+    interior de uno de ellos, poco a poco, hasta que quedan a HUECO o más; se queda si deja menos flujos pegados, sin más
+    cruces, sin pisar ninguna forma, sin ir por la recta de otro flujo y sin tapar etiquetas ni mezclar lados."""
+    import drawio_modelo as dm
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    flujos = proc["flujos"]
+    indices = [i for i, f in enumerate(flujos) if i < len(geo["flujos"]) and f["de"] in tipo and f["a"] in tipo
+               and f["de"] != f["a"]]
+    centros, cajas, alto = _obstaculos(proc, geo, tam)
+
+    def caminos_de(rutas):
+        return {k: dm._camino(centros[flujos[k]["de"]], tam[tipo[flujos[k]["de"]]], rutas[k],
+                              centros[flujos[k]["a"]], tam[tipo[flujos[k]["a"]]]) for k in rutas}
+
+    def pegados(cs):
+        return sum(1 for a, b in itertools.combinations(sorted(cs), 2) if _pegados(cs[a], cs[b]))
+
+    def encima(cs, k):
+        """Si el camino de k va por la misma recta que otro a lo largo de más de 1 px."""
+        for o, d in cs.items():
+            if o == k:
+                continue
+            for p, q in zip(cs[k], cs[k][1:]):
+                for r, s in zip(d, d[1:]):
+                    for eje in (0, 1):
+                        if abs(p[eje] - q[eje]) <= 1 and abs(r[eje] - s[eje]) <= 1 and abs(p[eje] - r[eje]) <= 1:
+                            o2 = 1 - eje
+                            if min(max(p[o2], q[o2]), max(r[o2], s[o2])) - max(min(p[o2], q[o2]), min(r[o2], s[o2])) > 1:
+                                return True
+        return False
+
+    caminos = caminos_de({k: geo["flujos"][k] for k in indices})
+    sitios = geo.get("etiquetas_flujo", {})
+    for _ in range(2 * len(indices)):
+        pares = [(a, b) for a, b in itertools.combinations(sorted(caminos), 2) if _pegados(caminos[a], caminos[b])]
+        if not pares:
+            break
+        antes = (pegados(caminos), sum(_cruces_de_caminos(caminos).values()), _tapadas(proc, caminos, sitios),
+                 _mezclados(proc, caminos, centros, tam))
+        mejor = None
+        for k in sorted({k for par in pares for k in par}):
+            pts = [tuple(p) for p in geo["flujos"][k]]
+            propias = [b for b in cajas if not any(b[0] <= cx <= b[0] + b[2] and b[1] <= cy <= b[1] + b[3]
+                                                   for cx, cy in (centros[flujos[k]["de"]], centros[flujos[k]["a"]]))]
+            for m in range(len(pts) - 1):
+                eje = 0 if abs(pts[m][0] - pts[m + 1][0]) <= 1 else 1 if abs(pts[m][1] - pts[m + 1][1]) <= 1 else None
+                if eje is None:
+                    continue
+                for d in (6, -6, 12, -12, 18, -18, 24, -24):
+                    nuevos_pts = list(pts)
+                    for n in (m, m + 1):
+                        p = list(nuevos_pts[n])
+                        p[eje] += d
+                        nuevos_pts[n] = tuple(p)
+                    nuevos = dict(caminos)
+                    nuevos[k] = caminos_de({k: nuevos_pts})[k]
+                    c = nuevos[k]
+                    if any(abs(p[0] - q[0]) > 1 and abs(p[1] - q[1]) > 1 for p, q in zip(c, c[1:])):
+                        continue      # el tramo de al lado dejaría de ser recto
+                    if any(not cabecera + 6 <= x <= geo["ancho"] - 6 or not 6 <= y <= alto - 6 for x, y in c[1:-1]):
+                        continue
+                    if any(_cruza(p, q, box) for p, q in zip(c, c[1:]) for box in propias) or encima(nuevos, k):
+                        continue
+                    despues = (pegados(nuevos), sum(_cruces_de_caminos(nuevos).values()), _tapadas(proc, nuevos, sitios),
+                               _mezclados(proc, nuevos, centros, tam))
+                    if despues[0] < antes[0] and all(x <= y for x, y in zip(despues[1:], antes[1:])):
+                        if mejor is None or (despues, abs(d)) < (mejor[0], abs(mejor[3])):
+                            mejor = (despues, k, nuevos_pts, d)
+                        break
+        if mejor is None:
+            break
+        _, k, nuevos_pts, _ = mejor
+        geo["flujos"][k] = nuevos_pts
+        caminos[k] = caminos_de({k: nuevos_pts})[k]
+    return geo

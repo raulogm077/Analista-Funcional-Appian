@@ -318,7 +318,7 @@ def avisos(tmp):
     check(ancho["con avisos"] == ancho["sin avisos"],
           "avisos: los avisos a un sistema externo, flujos de mensaje desde la tarea, no añaden capa "
           f"({', '.join(f'{k}: {v:.0f} px' for k, v in ancho.items())})")
-    skill = (SCRIPTS.parent / "SKILL.md").read_text(encoding="utf-8")
+    skill = (SCRIPTS.parent / "references" / "buen-proceso.md").read_text(encoding="utf-8")
     sys.path.insert(0, str(SCRIPTS))
     import colocacion as co
     dos = {"pasos": [{"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"}],
@@ -329,7 +329,7 @@ def avisos(tmp):
     regla = next((l for l in skill.splitlines() if l.startswith("- **Avisos:**")), "")
     check("se dibuja como un `mensaje`" in regla and "nunca como una nota" in regla and "en su carril" in regla
           and "correo general" in skill,
-          "avisos: SKILL.md dice que cada aviso va como un mensaje en el carril de quien lo envía, nunca como nota, "
+          "avisos: buen-proceso.md dice que cada aviso va como un mensaje en el carril de quien lo envía, nunca como nota, "
           "salvo el correo general de tareas asignadas")
 
 
@@ -1698,7 +1698,8 @@ def abanico(tmp, env=None):
     su destino."""
     import drawio_modelo as dm
     d = tmp / "abanico.drawio"
-    run("crear", AQUI / "datos" / "abanico.json", "-o", d, esperado=2 if env else 0, env=env)
+    run("crear", AQUI / "datos" / "abanico.json", "-o", d, *(() if env else ("--colocacion", "mermaid")),
+        esperado=2 if env else 0, env=env)
     modo = "sin navegador" if env else "Mermaid"
     mal = conexiones_falsas(d) + solapes(d) + cruces(d)
     check(not mal, f"abanico ({modo}): las salidas de la puerta no se cruzan ni pisan nada " + "; ".join(mal[:6]))
@@ -2027,6 +2028,105 @@ def columna_lado_y_mensaje():
           f"mensaje: entra lejos de la salida del flujo y del lado por el que baja ({sitio}, {pts})")
 
 
+def ordenes_nuevas(tmp, env=None):
+    """Supuestos, pestañas por fase, importar un Visio o un BPMN, comparar con una referencia, la colocación que se
+    fuerza y los flujos pegados que se separan."""
+    import drawio_modelo as dm, enrutado as en
+    sys.path.insert(0, str(AQUI))
+    import visio_ficticio
+    tmp.mkdir(parents=True, exist_ok=True)
+    png = 2 if env else 0
+    # supuestos
+    proc = {"proceso": "Prueba", "carriles": ["A", "B"], "pasos": [
+        {"id": "EV-01", "tipo": "inicio", "carril": "A", "nombre": "Recibida"},
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar solicitud", "supuesto": "El carril no lo dice ninguna fuente"},
+        {"id": "GW-01", "tipo": "exclusiva", "carril": "B", "nombre": "¿Completa?"},
+        {"id": "EV-02", "tipo": "fin", "carril": "B", "nombre": "Aprobada"}, {"id": "EV-03", "tipo": "fin", "carril": "B", "nombre": "Devuelta"}],
+        "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "GW-01"}, {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"},
+                   {"de": "GW-01", "a": "EV-03", "etiqueta": "No"}]}
+    (tmp / "sup.json").write_text(json.dumps(proc, ensure_ascii=False), encoding="utf-8")
+    out = run("crear", tmp / "sup.json", "-o", tmp / "sup.drawio", "--colocacion", "capas", esperado=png, env=env)
+    xml = (tmp / "sup.drawio").read_text(encoding="utf-8")
+    leido = json.loads(run("leer", tmp / "sup.drawio").split("\naviso")[0])
+    check("supuestos (1)" in out and "ACT-01 «Revisar solicitud»: El carril no lo dice" in out and dm.SUPUESTO_TAREA in xml
+          and leido["pasos"][1].get("supuesto") == "El carril no lo dice ninguna fuente",
+          "supuesto: crear lo lista, la tarea lleva el borde discontinuo y leer lo devuelve")
+    run("bpmn", tmp / "sup.drawio")
+    check("Supuesto: El carril no lo dice" in (tmp / "sup.bpmn").read_text(encoding="utf-8"), "supuesto: en el BPMN, en documentation")
+    sidecar = json.loads((tmp / "sup.json").read_text(encoding="utf-8"))
+    (tmp / "c.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-01", "supuesto": ""}}]}), encoding="utf-8")
+    out = run("actualizar", tmp / "sup.drawio", tmp / "c.json", esperado=png, env=env)
+    check(dm.SUPUESTO_TAREA not in (tmp / "sup.drawio").read_text(encoding="utf-8") and "supuestos (" not in out,
+          "supuesto: quitarlo con poner le quita el borde")
+    check(sidecar["colocacion"].get("motor") == "capas"
+          and json.loads((tmp / "sup.json").read_text(encoding="utf-8"))["colocacion"].get("motor") == "capas",
+          "--colocacion capas: queda en el .json y actualizar la repite")
+    # pestañas
+    def fase(nombre, sub=None):
+        pasos = [{"id": "EV-01", "tipo": "inicio", "carril": "A", "nombre": "Viene de antes"},
+                 {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": f"Revisar {nombre}"},
+                 {"id": "EV-02", "tipo": "fin", "carril": "B", "nombre": "Sigue"}]
+        flujos = [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "EV-02"}]
+        if sub:
+            pasos.insert(2, {"id": "ACT-02", "tipo": "subproceso", "carril": "B", "nombre": sub})
+            flujos = [flujos[0], {"de": "ACT-01", "a": "ACT-02"}, {"de": "ACT-02", "a": "EV-02"}]
+        return {"proceso": nombre, "carriles": ["A", "B"], "pasos": pasos, "flujos": flujos}
+    libro = {"proceso": "Contratación", "paginas": [fase("Alta", "Evaluación"), fase("Evaluación")]}
+    (tmp / "libro.json").write_text(json.dumps(libro, ensure_ascii=False), encoding="utf-8")
+    run("validar", tmp / "libro.json")
+    out = run("crear", tmp / "libro.json", esperado=png, env=env)
+    top = ET.parse(tmp / "libro.drawio").getroot()
+    check([(d.get("id"), d.get("name")) for d in top.findall("diagram")] == [("pagina-1", "Alta"), ("pagina-2", "Evaluación")]
+          and 'link="data:page/id,pagina-2"' in (tmp / "libro.drawio").read_text(encoding="utf-8")
+          and (env is not None or all((tmp / f"libro-{k}.png").is_file() for k in (1, 2))),
+          "pestañas: un .drawio con una pestaña por fase, el subproceso enlaza con la suya y un PNG por pestaña")
+    leido = json.loads(run("leer", tmp / "libro.drawio"))
+    check([p["proceso"] for p in leido["paginas"]] == ["Alta", "Evaluación"] and leido["proceso"] == "Contratación",
+          "pestañas: leer devuelve todas")
+    (tmp / "cl.json").write_text(json.dumps({"pagina": "Evaluación", "cambios": [{"poner": {"id": "ACT-01", "nombre": "Evaluar ofertas"}}]},
+                                            ensure_ascii=False), encoding="utf-8")
+    out = run("actualizar", tmp / "libro.drawio", tmp / "cl.json", esperado=png, env=env)
+    leido = json.loads(run("leer", tmp / "libro.drawio"))
+    check(leido["paginas"][1]["pasos"][1]["nombre"] == "Evaluar ofertas" and leido["paginas"][0]["pasos"][1]["nombre"] == "Revisar Alta"
+          and "pestaña 1" not in out and 'link="data:page/id,pagina-2"' in (tmp / "libro.drawio").read_text(encoding="utf-8"),
+          "pestañas: actualizar cambia solo la pestaña que se dice")
+    out = run("comparar", tmp / "libro.drawio")
+    run("bpmn", tmp / "libro.drawio")
+    check("Sin cambios" in out and (tmp / "libro-1.bpmn").is_file() and (tmp / "libro-2.bpmn").is_file(),
+          "pestañas: comparar sin cambios y un .bpmn por pestaña")
+    # importar y comparar con una referencia
+    visio_ficticio.construir(tmp / "alta.vsdx")
+    out = run("importar", tmp / "alta.vsdx", "-o", tmp / "imp" / "alta.json")
+    imp = json.loads((tmp / "imp" / "alta.json").read_text(encoding="utf-8"))
+    check(imp["carriles"] == ["Solicitante", "Técnico"] and imp.get("externos") == ["Registro mercantil"]
+          and [(p["id"], p["tipo"], p["carril"]) for p in imp["pasos"]][:4] ==
+          [("EV-01", "inicio", "Solicitante"), ("ACT-01", "tarea", "Solicitante"), ("ACT-02", "tarea", "Técnico"), ("GW-01", "exclusiva", "Técnico")]
+          and {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"} in imp["flujos"] and imp.get("notas"),
+          "importar un .vsdx: pasos con su tipo y carril, flujos con su etiqueta, el participante externo y la nota")
+    run("crear", tmp / "imp" / "alta.json", esperado=png, env=env)
+    run("bpmn", tmp / "imp" / "alta.drawio")
+    run("importar", tmp / "imp" / "alta.bpmn", "-o", tmp / "imp" / "vuelta.json")
+    vuelta = json.loads((tmp / "imp" / "vuelta.json").read_text(encoding="utf-8"))
+    check(not dm.comparar(vuelta, json.loads((tmp / "imp" / "alta.json").read_text(encoding="utf-8"))),
+          "importar el .bpmn que exporta la skill devuelve el mismo proceso, con sus códigos")
+    out = run("comparar", tmp / "imp" / "alta.drawio", "--con", tmp / "alta.vsdx")
+    check("Igual que alta.vsdx" in out, "comparar --con: igual que el Visio del que sale")
+    ref = json.loads(json.dumps(vuelta))
+    ref["pasos"][2]["carril"] = "Solicitante"
+    ref["pasos"].append({"id": "ACT-09", "tipo": "sistema", "carril": "Técnico", "nombre": "Avisar al registro"})
+    (tmp / "ref.json").write_text(json.dumps(ref, ensure_ascii=False), encoding="utf-8")
+    out = run("comparar", tmp / "imp" / "alta.drawio", "--con", tmp / "ref.json")
+    check("«Revisar solicitud»: lo hace «Solicitante» en la referencia y «Técnico» en el diagrama" in out
+          and "falta «Avisar al registro»" in out, "comparar --con: el perfil equivocado y el paso que falta")
+    # flujos pegados: la salida «No» ya no va a menos de HUECO de la «Sí»
+    d = tmp / "pegados.drawio"
+    run("crear", AQUI / "datos" / "puerta-otro-carril.json", "-o", d, esperado=2, env=entorno(sin_navegador=True))
+    proc, geo, _ = dm.Fichero(str(d)).leer()
+    caminos = [c for _, c in _caminos(proc, geo)]
+    pegados = sum(1 for i, c in enumerate(caminos) for e in caminos[i + 1:] if en._pegados(c, e))
+    check(not pegados, f"flujos pegados: por capas, dos salidas de una puerta no bajan a menos de {en.HUECO} px ({pegados})")
+
+
 def main_sin_navegador():
     """Con DIAGRAMAS_SIN_NAVEGADOR=1, lo que se puede hacer sin navegador: dibujar el .drawio (también en tramos),
     leerlo, compararlo, exportar el BPMN y validar."""
@@ -2051,6 +2151,7 @@ def main_sin_navegador():
         letra_de_tareas()
         estructura()
         retrocesos()
+        ordenes_nuevas(tmp / "ordenes", entorno(sin_navegador=True))
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
         (tmp / "malo.json").write_text(json.dumps(malo), encoding="utf-8")
@@ -2097,6 +2198,7 @@ def main():
         letra_de_tareas()
         estructura()
         retrocesos()
+        ordenes_nuevas(tmp / "ordenes")
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"
         # 1. crear
@@ -2304,7 +2406,7 @@ def main():
                           {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"}, {"de": "GW-01", "a": "EV-03", "etiqueta": "No"},
                           {"de": "EV-02", "a": "EV-04"}, {"de": "EV-03", "a": "EV-04"}]}
         (tmp / "rev.json").write_text(json.dumps(rev), encoding="utf-8")
-        run("crear", tmp / "rev.json", "-o", tmp / "rev")
+        run("crear", tmp / "rev.json", "-o", tmp / "rev", "--colocacion", "mermaid")   # el caso es de Mermaid
         proc_r, geo_r, _ = dm.leer(str(tmp / "rev" / "rev.drawio"))
         por_debajo = [f["a"] for i, f in enumerate(proc_r["flujos"]) if f["a"].startswith("EV")
                       and geo_r["flujos"][i] and geo_r["flujos"][i][-1][1] > geo_r["pasos"][f["a"]][1] + 25]

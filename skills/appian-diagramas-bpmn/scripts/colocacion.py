@@ -1269,6 +1269,7 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
         enrutado.cambiar_de_lado(proc, geo, tam, cabecera)
         enrutado.columnas_rectas(proc, geo, tam, cabecera)
         enrutado.salir_por_lado_libre(proc, geo, tam, cabecera)
+        enrutado.separar_pegados(proc, geo, tam, cabecera)
     colocar_externos(proc, geo)
     return geo
 

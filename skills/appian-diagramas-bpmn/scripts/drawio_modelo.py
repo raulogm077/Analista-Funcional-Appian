@@ -40,10 +40,14 @@ ENLACES = {"enlace_salida", "enlace_entrada"}   # los cortes entre tramos: del d
 FORMAS_EVENTO = EVENTOS | ENLACES
 PREFIJO = {**{t: "EV" for t in EVENTOS}, **{t: "GW" for t in PUERTAS}, **{t: "ACT" for t in TAREAS}}
 TAM = {**{t: (40, 40) for t in FORMAS_EVENTO}, **{t: (50, 50) for t in PUERTAS}, **{t: (120, 96) for t in TAREAS}}
-DATOS_PASO = ("nodo", "temporizador", "proceso_llamado", "interrumpe")   # datos de un paso que no se ven en el dibujo
+DATOS_PASO = ("nodo", "temporizador", "proceso_llamado", "interrumpe", "supuesto")   # datos de un paso (supuesto: se ve en el borde)
 DATOS_FLUJO = ("condicion",)                                             # y de un flujo
 SI_NO = ("interrumpe",)       # datos de sí o no: true en el JSON y "1" en el .drawio; sin ellos, no
-NOMBRE_DATO = {"nodo": "nodo", "temporizador": "temporizador", "proceso_llamado": "proceso llamado", "condicion": "condición"}
+NOMBRE_DATO = {"nodo": "nodo", "temporizador": "temporizador", "proceso_llamado": "proceso llamado", "condicion": "condición",
+               "supuesto": "supuesto"}
+# un paso supuesto (lo que ninguna fuente dice, por confirmar con el usuario): borde ámbar y, en una tarea, discontinuo
+SUPUESTO = "strokeColor=#b86e00;"
+SUPUESTO_TAREA = SUPUESTO + "dashed=1;dashPattern=5 3;"
 
 AZUL, VERDE, ROJO, AMBAR = "#1d659c", "#117c00", "#b2002c", "#b86e00"
 # Aspecto: el de stack-diagram (papel, carriles tintados, un color de acento para la secuencia, monoespaciada para lo
@@ -314,7 +318,21 @@ def estilo_paso(p, contorno=None):
         letra = letra_tarea(p.get("nombre"))
         if letra != 11:
             estilo = estilo.replace("fontSize=11;", f"fontSize={letra};", 1)
-    return con_contorno(estilo, contorno)
+    return con_supuesto(con_contorno(estilo, contorno), p)
+
+
+def con_supuesto(estilo, p):
+    """El estilo con el borde de supuesto si el paso lo es, o sin él si ya no lo es."""
+    for marca in (SUPUESTO_TAREA, SUPUESTO):
+        estilo = estilo.replace(marca, "")
+    if p.get("supuesto"):
+        estilo += SUPUESTO_TAREA if p["tipo"] in TAREAS else SUPUESTO
+    return estilo
+
+
+def supuestos(proc):
+    """Las líneas «ACT-03 «Revisar»: texto» de los pasos supuestos, para listarlos al crear o actualizar."""
+    return [f"{p['id']} «{p.get('nombre') or p['tipo']}»: {p['supuesto']}" for p in proc["pasos"] if p.get("supuesto")]
 
 
 # ---------------------------------------------------------------- proceso (JSON)
@@ -527,6 +545,8 @@ def validar(proc):
             av.append(f"{pid}: un evento de error va en el borde de la tarea en la que salta; únelo a ella con un flujo discontinuo")
         if p.get("proceso_llamado") and p["tipo"] != "llamada":
             av.append(f"{pid}: proceso_llamado solo se usa en un paso de tipo llamada")
+        if "supuesto" in p and not isinstance(p["supuesto"], str):
+            av.append(f"{pid}: supuesto es el texto de lo que se supone («quién lo hace no lo dice ninguna fuente»)")
         if p.get("temporizador") and p["tipo"] not in ("temporizador", "inicio_temporizador"):
             av.append(f"{pid}: temporizador solo se usa en un paso de tipo temporizador o inicio_temporizador")
         if es_si(p.get("interrumpe")) and (p["tipo"] != "temporizador" or not unido):
