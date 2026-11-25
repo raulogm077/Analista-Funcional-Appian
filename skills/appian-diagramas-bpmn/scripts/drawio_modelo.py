@@ -347,7 +347,7 @@ def guardar_json(proc, ruta):
 
 def estructura(proc):
     """El proceso sin posiciones, ordenado de forma estable, para comparar. Un dato de Appian vacío cuenta como ausente."""
-    pasos = sorted(({**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **{k: "" for k in DATOS_PASO},
+    pasos = sorted(({**{k: p[k] for k in ("id", "tipo", "carril")}, "nombre": p.get("nombre", "") or "", **{k: "" for k in DATOS_PASO},
                      **datos(p, DATOS_PASO)} for p in proc["pasos"]), key=lambda p: p["id"])
     flujos = sorted(({"de": f["de"], "a": f["a"], "etiqueta": f.get("etiqueta", "") or "",
                       "discontinuo": bool(f.get("discontinuo")), "defecto": bool(f.get("defecto")),

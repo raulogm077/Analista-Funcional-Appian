@@ -132,11 +132,14 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   `separar_pegados` no lo ve (`_pegados` excluye la misma recta) ni puede apartarla sin un cruce. Mirar en qué paso de
   `mejorar` entran los dos caminos sin pasar por esa regla; lo natural era la salida por arriba (la puerta está arriba)
   y el plazo por la derecha. Relacionado con 4.20 del recopilatorio (dos plazos que comparten tramo). [diagramas]
-- **Diagramas: tareas seguidas del mismo perfil cuando el aprobado las separa.** En la misma prueba, partiendo de un
-  DF anterior, se dejaron «Lanzar» y «Adjuntar el extracto» en dos cajas «igual que en el DF». `buen-proceso.md` las
-  junta salvo que el negocio las vea como pasos distintos, y `fuentes.md` toma del aprobado «lo que las fuentes no
-  contradicen». Decir cuál gana cuando el aprobado es la versión anterior; en RRHH-007, con el DF como referencia,
-  se juntaron con una nota. [diagramas]
+- **Diagramas: el fichero de supuestos cuando el DF pasa a ser la referencia.** En la prueba con el plugin cargado del
+  25-nov (caso real GC-011), al llegar el DF la sesión borró `supuestos-X.md` porque «solo se hace sin diagrama
+  aprobado», aunque quedaban un supuesto, cuatro contradicciones entre el DF y las reuniones y lo pendiente de validar.
+  Decidir si el fichero se queda mientras haya algo por confirmar. [diagramas]
+- **Diagramas: cuándo las fuentes «rediseñan» el aprobado.** En la misma prueba, la sesión dijo que las reuniones,
+  dos meses posteriores, «no cambian el proceso» aunque añaden una revisión manual y otra forma de subir, y tomó el DF
+  como referencia; aun así dibujó lo de las reuniones en los dos puntos. En la primera pasada, sin el arreglo, ni
+  comparó las fechas. Si vuelve a pasar con otro caso, dar en `fuentes.md` un criterio más concreto. [diagramas]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 

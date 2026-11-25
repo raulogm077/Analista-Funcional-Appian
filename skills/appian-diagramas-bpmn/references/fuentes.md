@@ -26,13 +26,17 @@ Lo que no salga de forma explícita de las fuentes (quién hace una tarea, el or
 
 ## Partir de lo ya aprobado
 
-Busca en la carpeta del proyecto (y en la carpeta de la que cuelga) un diagrama ya aprobado del mismo proceso: `.vsdx`, `.vsd`, `.drawio`, `.bpmn`, un DF en Word o imágenes de un DF anterior. Si no lo encuentras, la respuesta pide el DF aprobado, si existe, antes de dar el diagrama por bueno. Si las fuentes lo citan («está en el DF», «las rutas que indica el DF») o su cabecera da la ruta del proyecto, pídelo antes de dibujar, con esa ruta. Si lo hay, pregunta una vez si es la referencia y parte de él:
+Busca en la carpeta del proyecto (y en la carpeta de la que cuelga) un diagrama ya aprobado del mismo proceso: `.vsdx`, `.vsd`, `.drawio`, `.bpmn`, un DF en Word o imágenes de un DF anterior. Si no lo encuentras, la respuesta lo pide, si existe, con la ruta cuando las fuentes lo citan («está en el DF», «las rutas que indica el DF») o su cabecera la da. Si puedes esperar la respuesta del usuario, pídelo antes de dibujar; si no (el encargo pide el diagrama sin más), dibuja y empieza la respuesta con «Borrador sin el DF», que no se da por bueno hasta contrastarlo.
 
-1. Pasa su contenido al JSON de la skill: un `.vsdx` o un `.bpmn`, con `importar`; un DF, a mano, con los pasos, perfiles, puertas, inicios y fines, y los códigos del cliente.
-2. Usa las fuentes posteriores (reuniones, demos) solo para lo que ha cambiado desde que se aprobó. Lo que no está en el diagrama aprobado lleva una nota «Pendiente de validar: no está en el diagrama aprobado».
-3. Si las fuentes contradicen el diagrama aprobado, gana el diagrama aprobado y la contradicción se dice en la respuesta.
+**Primero, ¿es la referencia?** Lee su fecha en la portada, en el control de versiones y en el bloque de aprobación; si no coinciden, vale la más reciente, y si el bloque de aprobación está vacío, dilo en la respuesta. Compárala con la de las fuentes y di en la respuesta cuál de estos dos casos aplica, antes de dibujar:
 
-Antes, compara su fecha y versión con las de las fuentes. La fecha se lee en la portada, en el control de versiones y en el bloque de aprobación; si no coinciden, vale la más reciente, y si el bloque de aprobación está vacío, dilo en la respuesta. Si las fuentes son posteriores y rediseñan el proceso (un evolutivo, otra fase, otros sistemas o perfiles), el aprobado es la versión anterior, no la referencia: dibuja lo que dicen las fuentes, toma del aprobado los nombres del cliente (perfiles, sistemas, estados) y lo que las fuentes no contradicen, marca con «Pendiente de validar» lo del aprobado que las fuentes ya no mencionan y pide el DF de la versión nueva.
+- **Las fuentes son posteriores y rediseñan el proceso** (un evolutivo, otra fase, un paso o una revisión que el aprobado no tiene, otros sistemas o perfiles): el aprobado es la versión anterior, no la referencia. Dibuja lo que dicen las fuentes; toma del aprobado los nombres del cliente (perfiles, sistemas, estados) y lo que las fuentes no contradicen; donde se contradicen, gana la fuente posterior y la nota cita las dos; marca con «Pendiente de validar» lo del aprobado que las fuentes ya no mencionan y pide el DF de la versión nueva.
+- **Si no**, el aprobado es la referencia. Pregunta una vez si lo es y parte de él:
+  1. Pasa su contenido al JSON de la skill: un `.vsdx` o un `.bpmn`, con `importar`; un DF, a mano, con los pasos, perfiles, puertas, inicios y fines, y los códigos del cliente.
+  2. Usa las fuentes posteriores (reuniones, demos) solo para lo que ha cambiado desde que se aprobó. Lo que no está en el diagrama aprobado lleva una nota «Pendiente de validar: no está en el diagrama aprobado».
+  3. Si las fuentes contradicen el diagrama aprobado, gana el diagrama aprobado y la contradicción se dice en la respuesta.
+
+No copies el paso a paso de un DF como tareas (uno de RPA o técnico describe cada clic o cada documento): las tareas seguidas de un mismo sistema o perfil van en una caja, con lo que incluyen en la nota, aunque el DF las dibuje separadas, salvo que el negocio las vea como pasos distintos («Tareas seguidas», en `buen-proceso.md`). El código del DF va entre corchetes.
 
 En los dos casos, con el DF a mano:
 

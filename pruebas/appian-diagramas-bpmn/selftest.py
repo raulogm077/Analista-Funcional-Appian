@@ -1775,6 +1775,9 @@ def estructura():
         (tmp / "union.json").write_text(json.dumps(sin_nombre, ensure_ascii=False), encoding="utf-8")
         run("crear", tmp / "union.json", "-o", tmp / "d", esperado=2, env=entorno(sin_navegador=True))
         check((tmp / "d" / "union.json").is_file(), "crear: una puerta sin el campo nombre no rompe el JSON del proceso")
+        salida = run("actualizar", tmp / "d" / "union.drawio", tmp / "union.json", esperado=2,   # el proceso entero
+                     env=entorno(sin_navegador=True))
+        check("Traceback" not in salida, "actualizar: el proceso entero con una puerta sin el campo nombre no rompe al comparar")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
