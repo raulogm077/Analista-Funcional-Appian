@@ -60,11 +60,12 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Seguridad de acciones de registro con constante.** Diez acciones no salían a nadie (una vez, sin causa
   demostrada). Contrastarlo escribe en Indra-spain: solo si Raúl lo autoriza; hasta entonces, sin regla. [prueba]
 - **Diagramas.** Reducir los 30/38 avisos residuales solo con una mejora medida, sin relajar detectores.
-- **Diagramas: probar las reglas de transcripción y DF** (`evaluaciones.md`, «Diagrama sacado de dos transcripciones de una demo»): con `--plugin-dir`, dar a una sesión transcripciones que citan un DF que no está en la carpeta y comprobar que lo pide antes de dibujar; luego pasarle el DF y comprobar que cambia los «por confirmar» que el DF contesta, toma de él los nombres de sistema y anota su alcance. [diagramas]
 - **El SKILL.md, del mismo commit que los scripts.** Una sesión dibujó con los scripts de una rama y siguió el SKILL.md del plugin instalado, de otra versión, y no aplicó las reglas nuevas (pedir el DF, prefijos «Supuesto:»). Al usar una skill desde una rama o una copia, se lee su SKILL.md de esa misma copia. Si vuelve a pasar, una frase en `CLAUDE.md`. Segundo caso (24-nov): un hilo dibujó con el plugin instalado en su sesión (0.8.0-beta.3) y no con la rama del PR abierto, y el diagrama salió sin el aspecto nuevo; se rehízo con los scripts de la rama. El encargo de un hilo de diagramas debería decir de qué copia se usan los scripts. [persona y sesión]
-- **Diagramas: órdenes que faltan** (auditoría del 10-nov): pestañas por fase nativas (`pagina`), `importar` un
-  `.vsdx`, `comparar --con` una referencia, campos `ref` y `supuesto`, carriles por sistema (un proceso real con cinco participantes externos dedicó la mitad del dibujo a franjas y flechas de mensaje) y un PNG por pestaña. El
-  SKILL.md ya explica cómo hacerlo a mano mientras tanto. [diagramas]
+- **Diagramas: lo que queda de las órdenes que faltaban** (auditoría del 10-nov). Se hicieron pestañas, `importar`,
+  `comparar --con`, `supuesto`, carriles por sistema y un PNG por pestaña (`evaluaciones.md`). No se hizo el campo `ref`:
+  el código del cliente entre corchetes al final del nombre ya se dibuja aparte y `leer` lo devuelve; si un DF necesita
+  más de un código por tarea, se retoma. Tampoco «bajar una puerta de fila cuando quede más claro»: hace falta un
+  criterio medible antes de tocar la colocación. [diagramas]
 - **Un literal propuesto, bajo ✅.** En P7 («juntas») y en P7 quinquies, el texto del aviso «Indica el centro de
   coste», que ninguna fuente da, quedó en HU-06.2 con ✅ y la fuente del correo. La entrega lo declaraba propuesto, y
   lo que propone el analista va con 🔶. Es el mismo caso ficticio tres veces (también en P7 sexies). En P7 septies el
