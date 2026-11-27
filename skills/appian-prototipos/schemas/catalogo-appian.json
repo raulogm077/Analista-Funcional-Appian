@@ -1,7 +1,7 @@
 {
- "description": "Catálogo oficial de componentes de interfaz de Appian (una entrada por función SAIL, agrupadas por las categorías de la documentación). La prueba del plugin comprueba que galerias/componentes/app.json usa todas; validate.py y el runtime deben conocerlas.",
- "version": "26.9",
- "source": "https://docs.appian.com/suite/help/26.9/SAIL_Components.html",
+ "description": "Catálogo oficial de componentes de interfaz de Appian (una entrada por función SAIL, agrupadas por las categorías de la documentación). La prueba del plugin comprueba que galerias/componentes/app.json usa todas; validate.py y el runtime deben conocerlas. En 26.10, a!decimalField ocupa el sitio de a!floatingPointField, que pasa a obsoleto y sale del catálogo; el kit lo sigue conociendo y pintando para las versiones anteriores.",
+ "version": "26.10",
+ "source": "https://docs.appian.com/suite/help/26.10/SAIL_Components.html",
  "count": 147,
  "categories": {
   "Top-Level Layouts": [
@@ -45,7 +45,7 @@
    "a!barcodeField",
    "a!dateField",
    "a!dateTimeField",
-   "a!floatingPointField",
+   "a!decimalField",
    "a!encryptedTextField",
    "a!fileUploadField",
    "a!integerField",

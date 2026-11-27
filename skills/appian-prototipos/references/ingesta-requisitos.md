@@ -134,7 +134,7 @@ Una necesidad, una pantalla. Si dos historias caben en la misma (listado + expor
 | Sí/No opcional | `a!booleanCheckboxField` (dentro de un formulario) / `a!toggleField` (se aplica en el momento) | mapa `siNo` |
 | Sí/No que debe contestarse | `a!radioButtonField` Sí/No | `readOnly` con mapa `siNo` |
 | Fecha / fecha y hora | `a!dateField` / `a!dateTimeField` | filtro `date` / `datetime` |
-| Entero / decimal / importe | `a!integerField` / `a!floatingPointField` | filtro `num` / `eur` |
+| Entero / decimal / importe | `a!integerField` / `a!floatingPointField` (con Appian 26.10, `a!decimalField`: PRECISE para importes) | filtro `num` / `eur` |
 | Persona / grupo | `a!pickerFieldUsers` / `a!pickerFieldGroups`; si hay que recorrer la estructura para encontrarlo, `a!userBrowserFieldColumns` / `a!groupBrowserFieldColumns` | nombre + `a!imageField` AVATAR; línea jerárquica → `a!orgChartField` |
 | Documento o carpeta ya existente en Appian | `a!pickerFieldDocuments` / `a!pickerFieldFolders` / `a!pickerFieldDocumentsAndFolders`; explorar una biblioteca → `a!documentAndFolderBrowserFieldColumns` | `a!documentDownloadLink` / `a!documentViewerField` |
 | Jerarquía propia (sede → edificio → zona, organigrama de unidades) | `a!hierarchyBrowserFieldColumns` (selección) | `a!hierarchyBrowserFieldTree` |

@@ -302,6 +302,71 @@ def main():
         ok("con su QA pasando, la issue está hecha", iss.estado(t.p, "EV-01", hecha) == (True, "hecha"),
            iss.estado(t.p, "EV-01", hecha))
 
+        # A mano (Raúl, 6-nov): un escenario que no puede llevar guion lo mira una persona; un «falla» bloquea su issue
+        # como un guion, un «pasa» queda con quién y cuándo, y «repetir» los conserva sin repetirlos
+        mano = lambda *x: t.qa("a-mano", str(t.p), "EV-01", *x, sesiones=False)
+        iss02 = issue(iss, "ISS-02", ["HU-02.1", "HU-02.2"])
+        c1, o1 = mano("HU-02.2", "--falla", "no llega", "--quien", "Ana")
+        c3, o3 = mano("HU-02.3", "--pasa", "--quien", "Ana", "--por-que", "y")
+        ok("a mano: pide qué se mira y por qué no lo cubre un guion, y no vale para un caso de prueba",
+           (c1, c3) == (2, 2) and "--por-que" in o1 and "caso de prueba" in o3
+           and "aMano" not in t.resultado()[0], o1 + o3)
+        c, out = mano("HU-02.2", "--falla", "no llega el correo", "--quien", "Ana", "--por-que", "SAIL CLI no lee el buzón")
+        datos = t.resultado()[0]
+        e = datos["aMano"]["HU-02.2"]
+        ok("a mano: un «falla» va aparte, con quién y por qué, sale de «sin guion» y devuelve su issue a pendiente",
+           c == 1 and e["resultado"] == "falla" and e["quien"] == "Ana" and e["issue"] == "ISS-02"
+           and "HU-02.2" not in datos["sinGuion"] and iss.falla_en_qa(t.p, "EV-01", iss02) == ["HU-02.2"], out)
+        # mixto (HU-09.2 de la campaña: el guion ve el enlace, la descarga se mira a mano): ninguno tapa al otro
+        c, out = mano("HU-02.1", "--falla", "el documento no abre", "--quien", "Ana", "--por-que", "la descarga")
+        c2, out2 = t.repetir()
+        datos = t.resultado()[0]
+        ok("a mano en un escenario con guion: el guion sigue pasando, el fallo a mano sigue contando, y repetir lo "
+           "conserva, lo enseña aparte y sale con 1",
+           c == 1 and datos["escenarios"]["HU-02.1"]["resultado"] == "pasa"
+           and datos["aMano"]["HU-02.1"]["resultado"] == "falla" and datos["aMano"]["HU-02.2"]["quien"] == "Ana"
+           and set(iss.falla_en_qa(t.p, "EV-01", iss02)) == {"HU-02.1", "HU-02.2"} and c2 == 1
+           and "HU-02.1 · falla a mano (Ana" in out2 and "no lo repite ningún script" in out2, out + out2)
+        # un guion nuevo para HU-02.2 no borra lo que vio una persona: el guion no demuestra que cubra ese fallo
+        t.guion("HU-02.2", {**GUIONES["HU-02.1"], "escenario": "HU-02.2",
+                            "dice": ["Dada una solicitud devuelta", "Cuando el gestor la corrige", "Entonces vuelve a «Enviada»"]})
+        t.repetir()
+        ok("un guion nuevo del mismo escenario no retira el fallo a mano",
+           t.resultado()[0]["aMano"]["HU-02.2"]["resultado"] == "falla"
+           and "HU-02.2" in iss.falla_en_qa(t.p, "EV-01", iss02), str(t.resultado()[0].get("aMano")))
+        (t.p / "qa" / "EV-01" / "HU-02.2.json").unlink()
+        c, out = mano("HU-02.2", "--pasa", "--quien", "Ana")
+        c1, o1 = mano("HU-02.1", "--pasa", "--quien", "Ana")
+        c2, out2 = t.repetir()
+        ok("a mano: un «pasa» reutiliza el porqué y retira solo ese fallo; con los dos, repetir vuelve a salir con 0",
+           c == 0 and c1 == 0 and t.resultado()[0]["aMano"]["HU-02.2"]["porQue"] == "SAIL CLI no lee el buzón"
+           and iss.falla_en_qa(t.p, "EV-01", iss02) == [] and c2 == 0 and "HU-02.2 · pasa a mano (Ana" in out2,
+           out + o1 + out2)
+        # revisión de Codex: un --falla vacío no se lee como «pasa»; lo de un escenario retirado del análisis no es un
+        # fallo de ahora; y una unidad sin guiones con un fallo a mano lo enseña y sale con 1
+        c, out = mano("HU-02.2", "--falla", " ", "--quien", "Ana")
+        ok("a mano: un --falla vacío no se anota", c == 2 and t.resultado()[0]["aMano"]["HU-02.2"]["resultado"] == "pasa", out)
+        datos = t.resultado()[0]
+        datos["aMano"]["HU-99.9"] = {"resultado": "falla", "motivo": "x", "quien": "Ana", "porQue": "y", "issue": "ISS-09"}
+        escribe(t.p / "qa" / "EV-01" / "resultado.json", a_json(datos))
+        c, out = t.repetir()
+        ok("lo anotado a mano de un escenario que ya no está se conserva, pero no cuenta como fallo",
+           c == 0 and "HU-99.9" in t.resultado()[0]["aMano"] and "ya no está en el análisis" in out, out)
+        escribe(t.p / "construccion" / "EV-02" / "ISS-01.feature",
+                "# language: es\nCaracterística: HU-07 Avisar\n\n  Escenario: HU-07.1\n    Dado un gestor\n"
+                "    Cuando le aprueban\n    Entonces le llega un correo\n")
+        c, out = t.qa("a-mano", str(t.p), "EV-02", "HU-07.1", "--falla", "no llega", "--quien", "Ana", "--por-que",
+                      "SAIL CLI no lee el buzón", sesiones=False)
+        c2, out2 = t.qa("repetir", str(t.p), "EV-02")
+        ok("una unidad sin guiones pero con un fallo a mano lo enseña y sale con 1",
+           c == 1 and c2 == 1 and "HU-07.1 · falla a mano (Ana" in out2, out + out2)
+        shutil.rmtree(t.p / "construccion" / "EV-02")
+        shutil.rmtree(t.p / "qa" / "EV-02")
+        datos = t.resultado()[0]
+        datos.pop("aMano")
+        datos["sinGuion"] = ["HU-02.2"]
+        escribe(t.p / "qa" / "EV-01" / "resultado.json", a_json(datos))       # lo de después, como estaba
+
         # un defecto: falla, con el paso y lo que salió, y su issue vuelve a pendiente
         t.defecto(estado_alta="Borrador")
         c, out = t.repetir()
@@ -338,6 +403,107 @@ def main():
            and "HU-02.1" not in out and iss.estado(t.p, "EV-01", hecha) == (True, "hecha"), out)
         c, out = t.repetir()
         ok("y la unidad entera vuelve a pasar", c == 0 and set(resultados().values()) == {"pasa"}, out)
+
+        # campaña del 5-nov: la primera orden tras abrir un formulario de inicio pone el valor, pero SAIL CLI devuelve el
+        # formulario entero en «changed», «changedFields» vacío y movedNothing. Si el campo tenía otro valor y ahora tiene
+        # el pedido, sí cambió algo: el guion pasa. Poner el valor que ya tenía sigue fallando (la variante de abajo)
+        t.defecto(primera_sin_diff=True)
+        c, out = t.repetir()
+        ok("la primera orden tras abrir un formulario, con movedNothing pero con el valor puesto, no es un fallo",
+           c == 0 and set(resultados().values()) == {"pasa"}, out)
+        t.defecto()
+        # la excepción, estrecha (revisión de Codex): hace falta ver el valor de antes y que el de ahora sea el pedido
+        form = lambda **v: {"#t": "FormLayout", "contents": [{"#t": "TextField", "label": k, "value": x} for k, x in v.items()]}
+        casos = [((["Curso", "X"], {"ui": form(Curso="")}, {"changed": [form(Curso="X")]}), True, "de vacío al valor pedido"),
+                 ((["Curso", "X"], {"ui": form(Proveedor="")}, {"changed": [form(Curso="X")]}), False,
+                  "sin ver el valor de antes"),
+                 ((["Curso", "None"], {"ui": form(Curso="")}, {"changed": [form(Curso=None)]}), False, "null no es «None»"),
+                 ((["Curso", "X"], {"ui": form(Curso="X")}, {"changed": [form(Curso="X")]}), False, "el valor que ya tenía")]
+        # QA del 5-nov, con la forma real del --json: una opción sin elegir y una subida sin fichero vienen sin «value», y
+        # el layout que las envuelve lleva la misma etiqueta
+        campo = lambda t, etq, **v: {"#t": "FormLayout", "contents": [{"#t": "SectionLayout2", "label": etq},
+                                                                     {"#t": t, "label": etq, **v}]}
+        doc = [{"fileName": "certificado", "extension": "pdf", "documentId": {"#t": "CollaborationDocument", "id": 1}}]
+        ruta = str(pathlib.Path("qa") / "EV-01" / "ficheros" / "certificado.pdf")
+        casos += [((["Decisión", "1"], {"ui": campo("RadioButtonField", "Decisión")},
+                    {"changed": [campo("RadioButtonField", "Decisión", value=1)]}), True, "una opción sin elegir, al índice"),
+                  ((["Decisión", "1"], {"ui": campo("RadioButtonField", "Decisión", value=1)},
+                    {"changed": [campo("RadioButtonField", "Decisión", value=1)]}), False, "la opción que ya estaba"),
+                  ((["Certificado", ruta], {"ui": campo("MultipleFileUploadWidget", "Certificado")},
+                    {"changed": [campo("MultipleFileUploadWidget", "Certificado", value=doc)]}), True,
+                   "una subida, con el nombre del fichero"),
+                  ((["Certificado", ruta.replace("certificado", "otro")], {"ui": campo("MultipleFileUploadWidget", "Certificado")},
+                    {"changed": [campo("MultipleFileUploadWidget", "Certificado", value=doc)]}), False,
+                   "una subida con otro nombre"),
+                  ((["Decisión", "1"], {"ui": {"#t": "SectionLayout2", "label": "Decisión"}},
+                    {"changed": [campo("RadioButtonField", "Decisión", value=1)]}), False,
+                   "solo la etiqueta del layout no es ver el campo"),
+                  ((["Decisión", "1"], {"ui": {"#t": "SectionLayout2", "label": "Decisión", "value": 0,
+                                               "contents": [{"#t": "RadioButtonField", "label": "Decisión", "value": 0}]}},
+                    {"changed": [{"#t": "FieldLayout", "label": "Decisión", "value": 1,
+                                  "contents": [{"#t": "RadioButtonField", "label": "Decisión", "value": 0}]}]}), False,
+                   "el value de un layout no es el del campo"),
+                  ((["Proveedor", "1"], {"ui": campo("DropdownField", "Proveedor")},
+                    {"changed": [campo("DropdownField", "Proveedor", value=1)]}), False,
+                   "un tipo sin captura de su forma vacía no se da por vacío")]
+        spec_pv = importlib.util.spec_from_file_location("qa_puso_un_valor", QA)
+        qa_pv = importlib.util.module_from_spec(spec_pv)
+        spec_pv.loader.exec_module(qa_pv)
+        mal = [que for (args, antes, d), esperado, que in casos if qa_pv.puso_un_valor(args, antes, d) != esperado]
+        ok("movedNothing con el valor puesto solo deja de fallar si se vio otro valor antes y ahora está el pedido, "
+           "según su tipo", not mal, "; ".join(mal))
+        # campaña del 5-nov: HU-09 no tuvo guion porque no se podía subir un fichero, y su fallo no llegó a resultado.json
+        vals = {"pasada": "7", "_ficheros": str(t.p / "qa" / "EV-01" / "ficheros")}
+        subida = qa_pv.sustituye(["interact", "Certificado", "{fichero:certificado.pdf}", "Curso", "QA {pasada}"], vals)
+        base = (t.p / "qa" / "EV-01" / "ficheros").resolve()
+        # fuera de la carpeta o no como valor entero: no se cambia y el guion no se da por bueno (revisión de Codex)
+        fuera = ["{fichero:../fuera.pdf}", "{fichero:D:fuera.pdf}", "{fichero:..}\\fuera.pdf", "x{fichero:a.pdf}",
+                 "{fichero:a.pdf}/../b.pdf"]
+        cambian = [x for x in fuera if qa_pv.sustituye(x, vals) != x]
+        g_mal = {"escenario": "HU-09.1", "dice": ["x"], "host": HOST, "site": "s", "roles": {"g": "u"}, "dado": [],
+                 "cuando": [{"rol": "g", "sail": ["interact", "Certificado", x]} for x in fuera],
+                 "entonces": [{"rol": "g", "sail": ["load"], "espera": {"completado": True}}]}
+        rechazos = [x for x in qa_pv.defectos(g_mal, "HU-09.1.json") if "el fichero va solo" in x]
+        ok("{fichero:<nombre>} es la ruta de qa/<U>/ficheros/<nombre> como valor entero; lo que sale de esa carpeta no se "
+           "cambia y el guion no se da por bueno; {pasada} sigue igual",
+           subida == ["interact", "Certificado", str(base / "certificado.pdf"), "Curso", "QA 7"]
+           and not cambian and len(rechazos) == len(fuera) and "{_ficheros}" == qa_pv.sustituye("{_ficheros}", vals),
+           str((subida, cambian, rechazos)))
+
+        # el guion se valida con su carpeta real, no con la de trabajo (revisión de Codex): un enlace dentro de
+        # qa/<U>/ficheros/ que sale de ella deja el guion por terminar antes de mandar nada a SAIL CLI. Windows usa
+        # junction (sin permiso de symlink); si no se puede crear el enlace, la prueba falla, nunca pasa sin medir
+        fuera_dir, enlace = t.p.parent / "fuera", t.p / "qa" / "EV-01" / "ficheros" / "enlace.pdf"
+        fuera_dir.mkdir(parents=True, exist_ok=True)
+        enlace.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            if os.name == "nt":
+                shell = shutil.which("pwsh") or shutil.which("powershell")
+                subprocess.run([shell, "-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference='Stop'; "
+                                "New-Item -ItemType Junction -Path $env:QA_LINK -Target $env:QA_TARGET | Out-Null"],
+                               env=dict(os.environ, QA_LINK=str(enlace), QA_TARGET=str(fuera_dir)), check=True,
+                               capture_output=True, text=True, encoding="utf-8", errors="replace")
+            else:
+                enlace.symlink_to(fuera_dir, target_is_directory=True)
+            hecho = enlace.resolve() == fuera_dir.resolve()
+        except (OSError, TypeError, subprocess.CalledProcessError) as e:
+            hecho = False
+            ok("NO MEDIDO: no se pudo crear el enlace para probar {fichero:} con su carpeta real", False, e)
+        if hecho:
+            antes_ll = llamadas(t)
+            g = json.loads(json.dumps(GUIONES["HU-01.1"]))
+            g["cuando"].append({"sail": ["interact", "Certificado", "{fichero:enlace.pdf}"]})
+            t.guion("HU-01.1", g)
+            c, out = t.repetir("--escenario", "HU-01.1")
+            e = t.resultado()[0]["escenarios"]["HU-01.1"]
+            ok("un enlace en qa/<U>/ficheros/ que sale de ella deja el guion por terminar, validado con la carpeta del "
+               "guion y sin llamar a SAIL CLI", c == 2 and e["resultado"] == "guion por terminar"
+               and "el fichero va solo" in e.get("motivo", "") and llamadas(t) == antes_ll, out)
+            t.guion("HU-01.1", GUIONES["HU-01.1"])
+            if os.name == "nt":
+                os.rmdir(enlace)
+            else:
+                enlace.unlink()
 
         # lo que la aplicación hace mal: el guion falla y su issue vuelve a pendiente
         def variante(nombre, cambio, esperado, que, resultado="falla", codigo=1):

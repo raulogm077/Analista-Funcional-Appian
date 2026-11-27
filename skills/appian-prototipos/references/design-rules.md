@@ -4,7 +4,7 @@ Esta guía adapta el **SAIL Design System** oficial de Appian (docs.appian.com/s
 
 El validador comprueba las reglas marcadas con ✔ y las muestra como avisos `UX ·`. Al final de la validación imprime la línea «Calidad UX: N avisos». El resto se revisa con la rúbrica (§17).
 
-Los bloques con los que se componen las pantallas (cabeceras, KPI, listas, grids con detalle, cards, IA, calendario, comentarios, kanban…) están en `references/bloques.md`, con cuándo usar cada uno; la galería navegable está en `galerias/bloques/`. Los 147 componentes de interfaz de Appian 26.9, uno a uno y agrupados como en la documentación, están en `galerias/componentes/`.
+Los bloques con los que se componen las pantallas (cabeceras, KPI, listas, grids con detalle, cards, IA, calendario, comentarios, kanban…) están en `references/bloques.md`, con cuándo usar cada uno; la galería navegable está en `galerias/bloques/`. Los 147 componentes de interfaz de Appian 26.10, uno a uno y agrupados como en la documentación, están en `galerias/componentes/`.
 
 ## 0. Antes de diseñar una pantalla
 
@@ -404,14 +404,14 @@ Solo se diseña IA si el análisis la pide. Si la propones tú, va marcada con `
 
 ## 17. Rúbrica de revisión UX
 
-Aplica la rúbrica en el paso 4 de SKILL.md, con pantallas nuevas o antes de enseñar el prototipo al cliente. Si hay agentes disponibles, que la aplique un agente distinto del que diseñó la pantalla. Puntúa cada criterio como ✅, ⚠️ o ❌ por pantalla, con el motivo.
+Aplica la rúbrica en el paso 4 de SKILL.md, antes de enseñar al cliente un prototipo nuevo o un cambio de estructura, navegación o flujo. Si hay agentes disponibles, que la aplique un agente distinto del que diseñó la pantalla. En pantallas ya revisadas, solo lo que cambia y lo que afecta. Puntúa cada criterio como ✅, ⚠️ o ❌ por pantalla, con el motivo; un ❌ es un incumplimiento concreto de esta guía, y una preferencia de estilo va como ⚠️, sin bloquear.
 
 1. La tarea principal se identifica en 3 segundos y está arriba a la izquierda.
 2. Hay un solo H1 y la jerarquía de títulos es coherente (§3).
 3. Hay como máximo un botón SOLID, solo la pérdida real de datos va en GHOST rojo, siempre con confirmación, y los botones llevan verbos.
 4. Las cards de contenido son blancas y llevan borde o sombra según el fondo; no hay cards con borde anidadas.
 5. El color tiene significado: la paleta de estados es común, hay como máximo dos colores no neutros por grid y el acento solo aparece en enlaces.
-6. Los grids tienen ≤7 columnas y una acción por celda, ningún texto se parte en más de 2 líneas, las cifras van a la derecha, las celdas vacías llevan «–» y el primer campo enlaza a la ficha.
+6. Los grids tienen ≤7 columnas y una acción por celda, ningún texto se parte en más de 2 líneas, las cifras van a la derecha (en los editables, todo a la izquierda, §7), las celdas vacías llevan «–» y el primer campo enlaza a la ficha.
 7. Los filtros están en la barra del grid (≤4) o en una barra de página; no hay una card-formulario de filtros.
 8. La ficha tiene una cabecera con ≤3 acciones, una franja de datos clave y un hito; las áreas 1:N van en vistas, no en acordeones.
 9. Los datos de la ficha se leen como resumen: etiqueta encima y 2–3 columnas, sin columnas estrechas de valores.

@@ -15,8 +15,8 @@ about the project, discover it (see *Discovering Project Context*); never assume
 
 **Markers in the references:** ✅ do · ❌ avoid · ⚠️ trap · ⓥ version-dependent · ⓣ tier-dependent
 (Advanced/Premium) · **[engineering]** general engineering doctrine with no Appian page (doc 11). Baseline:
-checked against the 26.3 and 26.6 documentation and the release notes up to 26.9 (the rules the official
-skill contests, doc 14, against the 26.9 documentation); each ⓥ names its release.
+checked against the 26.3 and 26.6 documentation and the release notes up to 26.10 (the rules the official
+skill contests, doc 14, against the 26.9 documentation and, for Decimal input, the 26.10 one); each ⓥ names its release.
 
 ## Two modes
 
@@ -132,7 +132,11 @@ through the design MCP, never through files.
 
 ## Tools
 
-Check what is available in the session; don't invent tools or assume they exist.
+Check what is available in the session; don't invent tools or assume they exist. Write to Appian only through the
+design MCP tools the session has (in Claude Code, deferred ones load with ToolSearch): if they aren't there, say so
+and work as without a design MCP (below). Don't call
+the server with a client of your own or with another skill's scripts (the reverse-engineering extractor runs read-only
+on purpose): that skips the session's permissions and that policy.
 
 **Design MCP (e.g. `appian-dev`) — "how is this actually implemented?"** Inspect and modify real objects,
 dependencies, validate against the environment. Ask for **the specific objects** you need; don't list the

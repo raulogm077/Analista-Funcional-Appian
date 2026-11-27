@@ -21,7 +21,9 @@ Lo esperado y la verificación, que es de donde sale si una issue está hecha (e
                              "<record type o CDT>": {"tipo": "recordType", "campos": [{"nombre": "x", "tipo": "Text"}]},
                              "<record type de una acción>": {"acciones": [{"nombre": "Pedir material", "tipo": "De lista"}]}}
                             «version» es la huella de lo que hay que construir y comprobar (redacta()): cambia si cambia
-                            la issue, no si cambian su orden o su reserva. «pruebas» es false si la issue no cambia
+                            la issue, no si cambian su orden o su reserva. «estructura», lo mismo sin lo que el
+                            técnico dice en §12 y §15: con la unidad Construida, si solo cambia eso, la verificación vale.
+                            «pruebas» es false si la issue no cambia
                             criterios ni reglas: «verificar» no ejecuta entonces ningún caso de prueba.
   verificacion/ISS-nn.json  el resultado de «verificar --esperado»: {"generadoEn", "entorno", "issue": <la de _issue, tal
                             cual>, "aplicacion", "objetos": [{"pedido", "existe", "tipo", "diferencias": {…}, …}],
@@ -384,8 +386,15 @@ def lineas_del_tecnico(d):
     abre_sub = False      # aún no se ha leído la primera línea de texto del apartado «### 3.n»
     cont, cabezas, unidas = continuaciones(T.lineas), {}, unidades_de_texto(T.lineas)
     en_13 = {"tabla": False, "reglas": False}    # §13: los pasos manuales van debajo de su tabla
+    valla = None          # la del bloque de código abierto (``` o ~~~, el diagrama Mermaid de §3): va a la Base, sin aviso
     for i, l in enumerate(T.lineas):
         s = T.seccion_de_linea[i]
+        v = re.match(r"^ {0,3}(`{3,}|~{3,})", l)
+        codigo = bool(valla or v)
+        if valla is None and v:
+            valla = v.group(1)
+        elif valla and v and v.group(1)[0] == valla[0] and len(v.group(1)) >= len(valla) and not l.strip()[len(v.group(1)):].strip():
+            valla = None      # se cierra con la misma marca, igual de larga o más, y nada detrás
         if i in cont:      # sigue el párrafo o la viñeta de la línea cabeza: es una sola unidad
             previa = (i, l)
             if cont[i] in cabezas:
@@ -452,7 +461,7 @@ def lineas_del_tecnico(d):
             otra_sub, abre_sub = es_marca_otra_unidad(l) and not l.startswith("|"), False     # «Otra unidad. Una por mes.» abre el apartado: todo él es de otra
         item = {"i": i, "donde": f"§{apartado or s}", "texto": unidas[i], "cabecera": cabecera if fila else None,
                 "otra": otra_sub or es_marca_otra_unidad(l), "titulo": titulo if fila else None, "ids": mo.ids_en(mo.sin_comentarios(l)), "de": de,
-                "objetos": objetos, "definidos": definidos, "estado": "", "era": None}
+                "objetos": objetos, "definidos": definidos, "estado": "", "era": None, "codigo": codigo}
         cabezas[i] = item
         if antes:
             previas = antes.get((s, de_bloque[i]), ())
@@ -590,7 +599,10 @@ def del_tecnico(d, issue, lineas, dts):
     # Una DT añadida como contexto puede enumerar procesos independientes: no implica que se construyan en serie.
     # Las dependencias conservan sus fuentes: la especificación y las DT seleccionadas por su «Necesidad».
     nombra = set().union(*(x["objetos"] for x in van if "dt" not in x or x["donde"] in necesarias))
-    return out, donde, nombra - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}
+    # para la huella de estructura (calcula): todas sus líneas, cambien o no con la unidad, menos §12 y §15
+    operativas = sorted((str(x["donde"]), " ".join(str(x.get("texto", "")).split())) for x in mias
+                        if not re.match(r"§1[25]\b", str(x["donde"])))
+    return out, donde, nombra - set(issue.objetos), {x["i"] for x in mias if "dt" not in x}, operativas
 
 
 # ------------------------------------------------------------------ el texto de una issue
@@ -671,8 +683,9 @@ def que_se_pide(d, issue):
 
 
 def como_se_comprueba(m):
-    """{criterio: «SAIL CLI (QA de la unidad): …» o «Caso de prueba de `X`: …»} de técnico §14: su columna «Con qué»
-    (un caso de prueba guardado o SAIL CLI) y «Cómo se prueba». Sin «Con qué», solo cómo se prueba."""
+    """{criterio: [«SAIL CLI (QA de la unidad): …» o «Caso de prueba de `X`: …»]} de técnico §14, una por cada fila que
+    lo cita (la regla con su caso de prueba y su efecto en la pantalla, en dos filas): su columna «Con qué» (un caso de
+    prueba guardado o SAIL CLI) y «Cómo se prueba». Sin «Con qué», solo cómo se prueba."""
     out = {}
     for _, cab, filas in m.tablas("T", "14"):
         ncab = [mo.normaliza(c) for c in cab]
@@ -683,12 +696,19 @@ def como_se_comprueba(m):
         for f in filas:
             celda = lambda k: limpio(f[k]) if k is not None and k < len(f) and not un.vacio(f[k]) else ""
             metodo = celda(con)
-            if mo.normaliza(metodo).startswith("sail"):
-                metodo = "SAIL CLI (QA de la unidad)"
+            sail = re.match(r"(?i)\s*sail(?:\s+cli)?(?![a-z])\s*(.*)", metodo)
+            if sail:      # con lo que añada la celda: el buzón que se revisa, la cuenta, los datos que prepara
+                metodo = "SAIL CLI (QA de la unidad)" + (f" {sail.group(1)}" if sail.group(1) else "")
             dice = ": ".join(x for x in (metodo, celda(como)) if x)
             for cid in mo.ids_en(f[0] if f else ""):
-                out.setdefault(cid, dice)
+                if dice and dice not in out.setdefault(cid, []):
+                    out[cid].append(dice)
     return out
+
+
+def solo_caso(comprobaciones):
+    """Si todas las comprobaciones de un criterio son casos de prueba de regla: entonces no espera guion de QA."""
+    return bool(comprobaciones) and all(mo.normaliza(x).startswith("caso de prueba") for x in comprobaciones)
 
 
 def escenarios(d, issue, pruebas):
@@ -699,15 +719,17 @@ def escenarios(d, issue, pruebas):
         reglas = [f"`{o}`" for f in issue.filas if any(k in mo.normaliza(f["tipo"]) for k in REGLAS) for o in f["objetos"]]
         return (["Esta issue no cambia criterios ni reglas: no hay pruebas que ejecutar." if issue.sin_pruebas else
                  f"No cambia criterios, pero sí reglas ({', '.join(reglas)}): se prueban con sus casos de prueba."], "", [])
-    L = [f"- `{c}` {limpio(m.criterio(c))} → {pruebas.get(c) or 'sin prueba en técnico §14'}" for c in issue.criterios]
-    caso = {c for c in issue.criterios if mo.normaliza(pruebas.get(c) or "").startswith("caso de prueba")}
+    L = [f"- `{c}` {limpio(m.criterio(c))} → {' · '.join(pruebas.get(c) or ()) or 'sin prueba en técnico §14'}"
+         for c in issue.criterios]
+    caso = {c for c in issue.criterios if solo_caso(pruebas.get(c))}
+    notas = {c: [f"Técnico §14: {x}" for x in pruebas.get(c) or ()] for c in issue.criterios}
     historias = list(dict.fromkeys(m.piezas[c].padre for c in issue.criterios))
     una = len(historias) == 1
     F = ["# language: es", f"Característica: {historias[0]} {m.piezas[historias[0]].titulo}" if una else
          f"Característica: {d.uid} {issue.id} {issue.titulo}"]
     sin = []
     for h in historias:
-        lineas, s = m.escenarios(h, solo=set(issue.criterios), caso=caso)
+        lineas, s = m.escenarios(h, solo=set(issue.criterios), caso=caso, notas=notas)
         sin += s
         F += lineas if una else ["", f"  Regla: {h} {m.piezas[h].titulo}"] + [f"  {l}" if l else l for l in lineas]
     return L, "\n".join(F) + "\n", sin
@@ -769,7 +791,7 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
     m, ctx, uid, r = d.m, d.ctx, d.uid, d.resumen
     pide = que_se_pide(d, issue)
     esc, issue.feature, issue.sin_gherkin = escenarios(d, issue, pruebas)
-    tec, donde, _, _ = del_tecnico(d, issue, lineas, dts)
+    tec, donde, _, _, operativas = del_tecnico(d, issue, lineas, dts)
     tec += supuestos_y_reglas(m, issue, pide + tec)
     filas = []
     for f in issue.filas:
@@ -807,7 +829,21 @@ def redacta(d, issue, plan, lineas, dts, pruebas):
                          casos_exigidos(m, issue, d)],
                         ensure_ascii=False, sort_keys=True)
     issue.version = hashlib.sha256(huella.encode("utf-8")).hexdigest()[:12]
+    # lo mismo sin lo que el técnico dice de la operación (§12) y sus pendientes (§15), que no dicen cómo construir: con
+    # la unidad ya construida, si solo cambia eso, su verificación sigue valiendo (verificacion()). El resto del técnico
+    # (una DT, una fila de §7 que dice qué hace un filtro), un requisito, un escenario, una fila de §13, lo que se espera
+    # de un objeto, una urgencia o un caso exigido la caducan como siempre (revisión de Codex)
+    def sin_operacion(fila):    # la columna «Dónde» de la fila, sin §12 ni §15
+        celdas = fila.split("|") if isinstance(fila, str) else []
+        if len(celdas) < 3:
+            return fila
+        quedan = [s.strip() for s in celdas[-2].split(",") if s.strip() and not re.match(r"§1[25]\b", s.strip())]
+        return "|".join(celdas[:-2] + [f" {', '.join(quedan) or '—'} ", celdas[-1]])
+    estructura = json.dumps([issue.requisitos, pide, esc, issue.feature, [sin_operacion(f) for f in filas], operativas,
+                             construido, urgentes_de_encargo,
+                             objetos_esperados, casos_exigidos(m, issue, d)], ensure_ascii=False, sort_keys=True)
     issue.esperado = {"_issue": {"id": issue.id, "unidad": uid, "version": issue.version, "pruebas": not issue.sin_pruebas,
+                                 "estructura": hashlib.sha256(estructura.encode("utf-8")).hexdigest()[:12],
                                  **({"casosExigidos": casos_exigidos(m, issue, d)} if casos_exigidos(m, issue, d) else {})},
                       **objetos_esperados}
     revisar = [un.texto_revision(uid, x, suyos) for x in plan.revisar      # T14: un aviso, no una puerta
@@ -1284,7 +1320,7 @@ def calcula(m, ctx, uid, estreno=False):
     lineas, dts, pruebas = lineas_del_tecnico(d), decisiones(d), como_se_comprueba(m)
     cubiertas = set()
     for i in issues:      # lo que nombra el técnico al hablar de cada una dice con cuáles comparte objetos
-        _, _, i.nombra, suyas = del_tecnico(d, i, lineas, dts)
+        _, _, i.nombra, suyas, _ = del_tecnico(d, i, lineas, dts)
         cubiertas |= suyas
     ordena(issues)
     # lo que el técnico dice para esta unidad (todo, en la construcción inicial; lo nuevo o lo que cambia, si no) y no
@@ -1305,13 +1341,14 @@ def calcula(m, ctx, uid, estreno=False):
     plan.manuales = [x for x in manuales_de(m.raiz, uid)
                      if any(i.id == x["issue"] and i.version == x["version"] for i in issues)]
     plan.permisos = permisos_de(m.raiz, uid)  # conservar decisiones caducadas/revocadas para revisión humana
-    if perdidas:
+    avisar = [x for x in perdidas if not x.get("codigo")]     # un bloque de código no es algo que nombrar
+    if avisar:
         corta = lambda t: (t if len(t) <= 60 else t[:57].rstrip() + "…").replace("|", "/")   # noqa: E731
-        plan.avisos.append(f"{len(perdidas)} {'línea' if len(perdidas) == 1 else 'líneas'} del técnico no nombran ningún "
+        plan.avisos.append(f"{len(avisar)} {'línea' if len(avisar) == 1 else 'líneas'} del técnico no nombran ningún "
                            f"objeto ni requisito de las issues de {uid} y van en "
                            + (f"la Base, {base[0].id}" if base is not issues else "todas")
                            + " (que nombren su objeto, o falta en §13): "
-                           + "; ".join(f"{x['donde']} «{corta(limpio(x['texto']).strip('| '))}»" for x in perdidas))
+                           + "; ".join(f"{x['donde']} «{corta(limpio(x['texto']).strip('| '))}»" for x in avisar))
     if len(d.todos) <= 1:     # con un solo objeto no hay nada que repartir: sin aviso de «Para»
         pass
     elif not ctx.con_para:
@@ -1504,6 +1541,14 @@ def verificacion(raiz, uid, issue):
     if de.get("id") != issue.id or de.get("unidad", uid) != uid:
         return None, f"verificacion/{f.name} no es de esta issue: repite «verificar» con su «esperado»"
     if de.get("version") != issue.version:
+        # con la unidad ya construida, si solo cambió lo que el técnico dice en §12 (operación) o §15 (pendientes), la
+        # verificación sigue valiendo; si cambió cualquier otra cosa (requisito, escenario, otra parte del técnico, fila
+        # de §13, objeto, urgencia o caso), caduca como siempre. Sin «estructura» guardada (verificaciones de antes),
+        # caduca: no se sabe qué cambió
+        estructura = (getattr(issue, "esperado", None) or {}).get("_issue", {}).get("estructura")
+        if de.get("estructura") and de.get("estructura") == estructura and \
+                any(u.id == uid and u.estado in un.CONSTRUIDAS for u in un.leer(raiz) or []):
+            return v, "verificada con su versión anterior: después de construir solo cambió el técnico §12 o §15"
         return None, "ha cambiado desde su última verificación"
     return v, ""
 
@@ -1575,6 +1620,8 @@ def _estado_verificado(raiz, uid, issue, marcas=(), manuales=None, permisos=None
         return True, " · ".join([f"hecha manualmente por {manual['quien']}: {manual['motivo']}" if manual else "hecha", *avisos, *avisos_permisos, *(f"marcada como no necesaria: {o} «{c}»"
                                                       for o, c, _ in fallos_qa(raiz, uid, issue))])
     v, por_que = verificacion(raiz, uid, issue)
+    if v is not None and por_que:   # verificada con su versión anterior, en una unidad ya construida
+        avisos_permisos.append(por_que)
     aceptados = [x for x in (permisos_de(raiz, uid) if permisos is None else permisos)
                 if x["issue"] == issue.id and x["version"] == issue.version and x["estado"] == "Vigente"]
     pendientes_permisos = []
@@ -1595,8 +1642,9 @@ def _estado_verificado(raiz, uid, issue, marcas=(), manuales=None, permisos=None
         for motivo in motivos if isinstance(motivos, list) else ["diagnóstico de permisos ilegible"]:
             avisos_permisos.append(f"permisos no comprobados de {o.get('pedido')}: {motivo}")
     if any(isinstance(e, dict) and ("permisosInicio" in e or any("visibilidad" in a for a in e.get("acciones", [])))
-           for e in issue.esperado.values()):
-        avisos_permisos.append("acceso efectivo por rol no comprobado: requiere QA con cada rol")
+           for e in issue.esperado.values()) and not repetida_en_qa(raiz, uid, issue):
+        # hasta su QA: con un resultado vigente de un escenario suyo, el acceso por rol lo dicen sus guiones
+        avisos_permisos.append("acceso efectivo por rol no comprobado: sin QA vigente; requiere QA con cada rol")
     if manual:
         # El cierre humano suple la lectura estructural. Nunca tapa un fallo vigente de pruebas o QA.
         fallan = [(o, c) for o, c, e in casos(v) + (casos_ausentes(v, issue) if v else [])
@@ -1671,13 +1719,35 @@ def fallos_qa(raiz, uid, issue):
     falla ninguno."""
     r = pathlib.Path(raiz) / "qa" / uid / "resultado.json"
     try:
-        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") if r.is_file() else None
-    except (ValueError, AttributeError):
-        esc = None
-    esc = esc if isinstance(esc, dict) else {}
+        todo = json.loads(r.read_text(encoding="utf-8-sig")) if r.is_file() else {}
+    except ValueError:
+        todo = {}
+    todo = todo if isinstance(todo, dict) else {}
+    esc = todo.get("escenarios") if isinstance(todo.get("escenarios"), dict) else {}
+    manos = todo.get("aMano") if isinstance(todo.get("aMano"), dict) else {}
+    # con la unidad ya construida, un fallo no deja de contar porque cambie la versión de la issue (revisión de Codex)
+    cerrada = any(u.id == uid and u.estado in un.CONSTRUIDAS for u in un.leer(raiz) or [])
     return [(QA, c, ": ".join(str(x) for x in (esc[c].get("paso"), esc[c].get("motivo")) if x))
             for c in issue.criterios if isinstance(esc.get(c), dict) and esc[c].get("resultado") == "falla"
-            and esc[c].get("versionIssue", issue.version) == issue.version]
+            and (cerrada or esc[c].get("versionIssue", issue.version) == issue.version)] + [
+        # lo que vio una persona (qa.py a-mano) cuenta hasta que, mirado otra vez, se anota que pasa
+        (QA, c, f"a mano ({manos[c].get('quien')}): {manos[c].get('motivo')}")
+        for c in issue.criterios if isinstance(manos.get(c), dict) and manos[c].get("resultado") == "falla"]
+
+
+def repetida_en_qa(raiz, uid, issue):
+    """Si algún escenario de la issue tiene un resultado vigente (pasa o falla) en el último QA de la unidad
+    (qa/<U>/resultado.json): de su versión de ahora y repetido esta vez, no conservado de otra (revisión de Codex). Dice
+    que hay QA vigente, no que cubra el acceso de cada rol: eso lo dicen sus guiones."""
+    r = pathlib.Path(raiz) / "qa" / uid / "resultado.json"
+    try:
+        todo = json.loads(r.read_text(encoding="utf-8-sig")) if r.is_file() else {}
+        esc, manos = todo.get("escenarios") or {}, todo.get("aMano") or {}
+    except (ValueError, AttributeError):
+        return False
+    vigente = lambda e: (isinstance(e, dict) and e.get("resultado") in ("pasa", "falla") and not e.get("sinRepetir")
+                         and e.get("versionIssue") == issue.version)
+    return any(vigente(esc.get(c)) or vigente(manos.get(c)) for c in issue.criterios)
 
 
 def falla_en_qa(raiz, uid, issue, marcas=()):
@@ -1702,15 +1772,20 @@ def avisos_qa(raiz, plan):
         return nota + [f"{plan.uid} no tiene QA (qa/{plan.uid}/resultado.json): lo siguiente es el QA de la unidad, en otra "
                 "sesión y solo con sus .feature (appian-qa; F8, paso 8)"]
     try:
-        esc = json.loads(r.read_text(encoding="utf-8-sig")).get("escenarios") or {}
+        todo = json.loads(r.read_text(encoding="utf-8-sig"))
+        esc, manos = todo.get("escenarios") or {}, todo.get("aMano") or {}
     except (ValueError, AttributeError):
-        esc = {}
+        esc, manos = {}, {}
     de = lambda c: (esc.get(c) or {}).get("resultado") if isinstance(esc.get(c), dict) else None
-    faltan = [(que, [c for c in escenarios if de(c) == res]) for que, res in
+    faltan = [(que, [c for c in escenarios if de(c) == res and (res or c not in manos)]) for que, res in
               (("sin guion", None), ("desfasados", "desfasado"), ("con el guion por terminar", "guion por terminar"),
                ("sin repetir", "sin repetir"))]
     faltan = [f"{que}: {', '.join(cs)}" for que, cs in faltan if cs]
-    return nota + ([f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else [])
+    # lo que miró una persona (qa.py a-mano): cuenta como el QA, pero no lo repite ningún script (F9, paso 2)
+    a_mano = [f"{c} ({manos[c].get('quien')}, {manos[c].get('resultado')})" for c in escenarios
+              if isinstance(manos.get(c), dict)]
+    return nota + ([f"el QA de {plan.uid} no está completo ({'; '.join(faltan)}): lo hace QA (appian-qa)"] if faltan else []) \
+        + ([f"{plan.uid}: mirados a mano, no los repite ningún script: {', '.join(a_mano)}"] if a_mano else [])
 
 
 def estados(plan, raiz):
@@ -1815,6 +1890,10 @@ def para_construir(m, ctx, plan, issue):
     pendientes = [iid for iid in issue.depende if not estados(plan, m.raiz).get(iid, (False, ""))[0]]
     aviso = [f"ESPERA a {', '.join(pendientes)} antes de construir esta issue.", ""] if pendientes else []
     L = aviso + [issue.texto.split("\n## Terminar\n", 1)[0].rstrip("\n"), ""] + texto_avance(plan, issue) + ["", "## Terminar", "",
+         # la regla de F8 («Los documentos, al día») donde se usa: en E5-2 y E5-3 se verificó antes de que lo decidido
+         # al construir volviera al técnico (campaña del 5-nov); solo en esta salida, no en la issue guardada
+         "Antes de verificar, lo que hayas decidido al construir y el técnico no diga vuelve al análisis (F8, «Los "
+         "documentos, al día»): la verificación compara con el técnico.", "",
          "Con los objetos construidos, en este equipo y desde esta carpeta"
          + (":" if len(ordenes) == 1 else " (no queda otra issue: la segunda orden marca la unidad):"), "", "```"]
     L += ordenes + ["```"] + [f"· {n}" for n in notas]
