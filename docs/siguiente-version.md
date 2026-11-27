@@ -269,6 +269,11 @@ Lo que salió al ejecutar `docs/plan/2026-10-16-plantilla-df-cliente.md` y no en
 - Documento de dudas del equipo en Word: tras cada reunión se añadieron preguntas nuevas en otro color, en su apartado, y
   las respuestas al final de cada pregunta («→ Respuesta 17/11: …»), con un script suelto que copia el formato del
   párrafo vecino. Pasó tres veces en una semana: valorar una orden que lo haga desde `df-cliente-pendientes.md`.
+- Citas de fuentes en lo que lee una persona: en un documento de dudas, un resumen de reunión o una respuesta en el
+  chat se citaron las fuentes por su ID («FU-33 9:20»), y nadie recuerda qué reunión es la FU-33. Ahí la cita va en
+  palabras: tipo de fuente, fecha y minuto («reunión técnica con SIGA del 24/11, min 9:20», «correo de SIGA del 26/11»).
+  El ID solo va donde lo leen los scripts (comentario de trazabilidad, índices). Lo mismo con los PC-nn y D-nn: si se
+  citan, con lo que dicen. Añadirlo a `redaccion.md` (y, si se puede, un aviso de `comprobar.py` para los entregables).
 
 ## Menores
 
