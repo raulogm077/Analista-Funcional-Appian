@@ -21,12 +21,14 @@ Este módulo sabe:
 - validar un proceso y comparar dos.
 Solo usa la biblioteca estándar.
 """
-import base64, bisect, copy, html, json, re, sys, urllib.parse, zlib
+import base64, bisect, copy, html, json, math, pathlib, re, sys, urllib.parse, zlib
 import xml.etree.ElementTree as ET
 
 sys.dont_write_bytecode = True  # sin __pycache__ en el plugin: no se escribe fuera del proyecto
 import colocacion  # noqa: E402
 from texto import escribir as escribir_texto  # noqa: E402
+
+HERE = pathlib.Path(__file__).resolve().parent
 
 # ---------------------------------------------------------------- tipos y estilos
 INICIOS = {"inicio", "inicio_temporizador", "inicio_mensaje"}
@@ -37,71 +39,98 @@ TIPOS = EVENTOS | PUERTAS | TAREAS
 ENLACES = {"enlace_salida", "enlace_entrada"}   # los cortes entre tramos: del dibujo, no del proceso
 FORMAS_EVENTO = EVENTOS | ENLACES
 PREFIJO = {**{t: "EV" for t in EVENTOS}, **{t: "GW" for t in PUERTAS}, **{t: "ACT" for t in TAREAS}}
-TAM = {**{t: (40, 40) for t in FORMAS_EVENTO}, **{t: (50, 50) for t in PUERTAS}, **{t: (120, 80) for t in TAREAS}}
-DATOS_PASO = ("nodo", "temporizador", "proceso_llamado", "interrumpe")   # datos de un paso que no se ven en el dibujo
+TAM = {**{t: (40, 40) for t in FORMAS_EVENTO}, **{t: (50, 50) for t in PUERTAS}, **{t: (120, 96) for t in TAREAS}}
+DATOS_PASO = ("nodo", "temporizador", "proceso_llamado", "interrumpe", "supuesto")   # datos de un paso (supuesto: se ve en el borde)
 DATOS_FLUJO = ("condicion",)                                             # y de un flujo
 SI_NO = ("interrumpe",)       # datos de sí o no: true en el JSON y "1" en el .drawio; sin ellos, no
-NOMBRE_DATO = {"nodo": "nodo", "temporizador": "temporizador", "proceso_llamado": "proceso llamado", "condicion": "condición"}
+NOMBRE_DATO = {"nodo": "nodo", "temporizador": "temporizador", "proceso_llamado": "proceso llamado", "condicion": "condición",
+               "supuesto": "supuesto"}
+# un paso supuesto (lo que ninguna fuente dice, por confirmar con el usuario): borde ámbar y, en una tarea, discontinuo
+SUPUESTO = "strokeColor=#b86e00;"
+SUPUESTO_TAREA = SUPUESTO + "dashed=1;dashPattern=5 3;"
 
-AZUL, VERDE, ROJO, AMBAR = "#1d659c", "#117c00", "#b2002c", "#b86e00"
-_BASE = "points=[];html=1;fontSize=12;fontColor=#222222;"
+# Aspecto «lámina»: el color dice qué es cada cosa y las líneas de secuencia van neutras. Tarea de usuario en añil, de
+# sistema en verde azulado, decisiones en ámbar, inicio en verde, fin en rojo y eventos intermedios en pizarra; la
+# vuelta a un paso anterior, en naranja. Las tareas son tarjetas: el pictograma de su tipo en una placa arriba a la
+# izquierda (un adorno, ver adorno_tarea), el nombre debajo y el código [GI-…] en una línea aparte (ver etiqueta_paso).
+AZUL, VERDE, ROJO, AMBAR = "#4b5d7a", "#1e9157", "#c93a30", "#b7770f"
+TINTA, SUAVE, APAGADO, BORDE, LINEA, PAPEL = "#1a1f2b", "#4a5366", "#7d8698", "#d5dae2", "#e4e7ec", "#ffffff"
+SECUENCIA, RETORNO, NEUTRO = "#3a4356", "#c2770c", "#8a93a5"
+USUARIO, SISTEMA, NUEVO = ("#3e4fc9", "#eef0fc"), ("#0f7f73", "#e8f6f4"), ("#13795b", "#e3f5ee")
+FUENTE = "fontFamily=Segoe UI,Helvetica,Arial,sans-serif;"
+MONO = "Consolas,JetBrains Mono,monospace"
+_BASE = f"points=[];html=1;fontSize=12;fontColor={TINTA};" + FUENTE
 # las etiquetas de eventos y puertas se ajustan a 110 px, el mismo ancho que reserva la colocación
 _EV = _BASE + ("shape=mxgraph.bpmn.event;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
                "whiteSpace=wrap;labelWidth=110;perimeter=ellipsePerimeter;outlineConnect=0;aspect=fixed;"
-               "labelBackgroundColor=none;")
+               "labelBackgroundColor=none;fontSize=11;fontColor=" + SUAVE + ";")
 _GW = _BASE + ("shape=mxgraph.bpmn.gateway2;outline=none;symbol=none;verticalLabelPosition=top;verticalAlign=bottom;"
-               "align=center;whiteSpace=wrap;labelWidth=110;perimeter=rhombusPerimeter;outlineConnect=0;"
-               "strokeColor=" + AMBAR + ";fillColor=#fff8e6;labelBackgroundColor=none;")
-_TK = _BASE + ("shape=mxgraph.bpmn.task;rectStyle=rounded;size=10;whiteSpace=wrap;strokeColor=" + AZUL + ";")
+               "align=center;whiteSpace=wrap;labelWidth=110;perimeter=rhombusPerimeter;outlineConnect=0;fontSize=11;fontStyle=1;"
+               "strokeColor=" + AMBAR + ";strokeWidth=1.5;fillColor=#fff6e5;labelBackgroundColor=none;")
+# tarjeta: el tipo va en tipo= (no hay marcador BPMN que lo diga); el texto, alineado a la izquierda debajo de la placa
+_TK = ("rounded=1;arcSize=10;absoluteArcSize=1;whiteSpace=wrap;html=1;points=[];align=left;verticalAlign=top;"
+       f"spacingTop=30;spacingLeft=8;spacingRight=6;fontSize=11;fontStyle=1;fontColor={TINTA};strokeColor={BORDE};"
+       "fillColor=#ffffff;" + FUENTE)
+_INT = f"strokeColor={AZUL};fillColor=#eef1f6;"
 ESTILO = {
-    "inicio": _EV + f"outline=standard;symbol=general;strokeColor={VERDE};",
-    "inicio_temporizador": _EV + f"outline=standard;symbol=timer;strokeColor={VERDE};",
-    "inicio_mensaje": _EV + f"outline=standard;symbol=message;strokeColor={VERDE};",
-    "fin": _EV + f"outline=end;symbol=general;strokeColor={ROJO};",
-    "temporizador": _EV + f"outline=catching;symbol=timer;strokeColor={AZUL};",
-    "mensaje": _EV + f"outline=throwing;symbol=message;strokeColor={AZUL};",
-    "intermedio": _EV + f"outline=catching;symbol=general;strokeColor={AZUL};",
-    "error": _EV + f"outline=boundInt;symbol=error;strokeColor={ROJO};",
+    "inicio": _EV + f"outline=standard;symbol=general;strokeColor={VERDE};fillColor=#e8f6ee;strokeWidth=2;",
+    "inicio_temporizador": _EV + f"outline=standard;symbol=timer;strokeColor={VERDE};fillColor=#e8f6ee;strokeWidth=2;",
+    "inicio_mensaje": _EV + f"outline=standard;symbol=message;strokeColor={VERDE};fillColor=#e8f6ee;strokeWidth=2;",
+    "fin": _EV + f"outline=end;symbol=general;strokeColor={ROJO};fillColor=#fdecea;",
+    "temporizador": _EV + "outline=catching;symbol=timer;" + _INT,
+    "mensaje": _EV + "outline=throwing;symbol=message;" + _INT,
+    "intermedio": _EV + "outline=catching;symbol=general;" + _INT,
+    "error": _EV + f"outline=boundInt;symbol=error;strokeColor={ROJO};fillColor=#fdecea;",
     "exclusiva": _GW + "gwType=exclusive;",
     "paralela": _GW + "gwType=parallel;",
     "inclusiva": _GW + "gwType=inclusive;",
-    "tarea": _TK + "taskMarker=user;fillColor=#ffffff;",
-    "sistema": _TK + "taskMarker=service;fillColor=#e8f0f6;",
-    "script": _TK + "taskMarker=script;fillColor=#e8f0f6;",
-    "manual": _TK + "taskMarker=manual;fillColor=#ffffff;",
-    "subproceso": _TK + "taskMarker=abstract;isLoopSub=1;fillColor=#ffffff;",
-    "llamada": _TK + "bpmnShapeType=call;taskMarker=abstract;isLoopSub=1;fillColor=#ffffff;",
-    "enlace_salida": _EV + f"outline=throwing;symbol=link;strokeColor={AZUL};enlace=1;",
-    "enlace_entrada": _EV + f"outline=catching;symbol=link;strokeColor={AZUL};enlace=1;",
+    "tarea": _TK + "tipo=tarea;",
+    "sistema": _TK + "tipo=sistema;",
+    "script": _TK + "tipo=script;",
+    "manual": _TK + "tipo=manual;",
+    "subproceso": _TK + "tipo=subproceso;dashed=1;dashPattern=6 3;",
+    "llamada": _TK + "tipo=llamada;strokeWidth=2.5;",
+    "enlace_salida": _EV + "outline=throwing;symbol=link;enlace=1;" + _INT,
+    "enlace_entrada": _EV + "outline=catching;symbol=link;enlace=1;" + _INT,
 }
 ENLACE = re.compile(r"^ENL-(\d+)-([SE])$")
 ID_TRAMO = re.compile(r"^tramo-(\d+)$")
 NOMBRE_TRAMO = re.compile(r"^(.*?) \(tramo \d+ de \d+(?:: .*)?\)$")   # «<proceso> (tramo N de M: <primero> – <último>)»
-ESTILO_CARRIL = ("swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;fillColor=#f4f5f7;"
-                 "swimlaneFillColor=#ffffff;strokeColor=#b8bec5;")
-ESTILO_FLUJO = ("edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;strokeColor=#4a5563;endArrow=block;"
-                "endFill=1;labelBackgroundColor=#ffffff;")
+# el nombre del carril, en horizontal arriba a la izquierda, sin cabecera girada; los carriles alternan blanco y gris
+# muy claro (estilo_carril) y el de la aplicación va en verde azulado
+ESTILO_CARRIL = ("swimlane;horizontal=1;startSize=26;html=1;whiteSpace=wrap;fontSize=13;fontStyle=1;align=left;"
+                 f"spacingLeft=12;fontColor={TINTA};fillColor=#ffffff;swimlaneFillColor=#ffffff;strokeColor={LINEA};"
+                 "swimlaneLine=0;" + FUENTE)
+CARRIL_SISTEMA = re.compile(r"^(aplicaci[oó]n|sistema|appian)\b", re.I)
+
+
+def estilo_carril(i, nombre):
+    """El estilo del carril `i` (desde 1): los pares, en gris muy claro; el de la aplicación, en verde azulado."""
+    if CARRIL_SISTEMA.match(nombre or ""):
+        return (ESTILO_CARRIL.replace(f"fontColor={TINTA};", f"fontColor={SISTEMA[0]};")
+                .replace("fillColor=#ffffff;swimlaneFillColor=#ffffff;", "fillColor=#f3faf9;swimlaneFillColor=#f3faf9;"))
+    if i % 2 == 0:
+        return ESTILO_CARRIL.replace("fillColor=#ffffff;swimlaneFillColor=#ffffff;", "fillColor=#f8f9fb;swimlaneFillColor=#f8f9fb;")
+    return ESTILO_CARRIL
+
+
+# las etiquetas de los flujos, en negrita sobre blanco, del color de la línea
+ESTILO_FLUJO = (f"edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;strokeColor={SECUENCIA};strokeWidth=1.5;"
+                f"endArrow=block;endFill=1;endSize=6;fontColor={SECUENCIA};labelBackgroundColor=none;"
+                + FUENTE)
+# un flujo que vuelve a un paso anterior (a su izquierda): en naranja, para que los reprocesos se vean de un vistazo
+ESTILO_RETORNO = ESTILO_FLUJO.replace(SECUENCIA, RETORNO).replace("strokeWidth=1.5;", "strokeWidth=1.6;")
 DEFECTO = "startArrow=dash;startFill=0;startSize=10;"          # marca del flujo por defecto
-ESTILO_MENSAJE = ("edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;strokeColor=#4a5563;dashed=1;dashPattern=8 4;"
-                  "startArrow=oval;startFill=0;startSize=7;endArrow=block;endFill=0;endSize=9;labelBackgroundColor=#ffffff;")
-ESTILO_EXTERNO = ("rounded=0;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fontColor=#222222;fillColor=#f4f5f7;"
-                  "strokeColor=#b8bec5;externo=1;")
+ESTILO_MENSAJE = (f"edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;strokeColor={NEUTRO};dashed=1;dashPattern=5 4;"
+                  "startArrow=oval;startFill=0;startSize=6;endArrow=block;endFill=0;endSize=7;"
+                  f"fontColor={SUAVE};labelBackgroundColor=#ffffff;" + FUENTE)
+ESTILO_EXTERNO = (f"rounded=1;arcSize=6;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;fontColor={SUAVE};fillColor=#f3f4f6;"
+                  "strokeColor=#b9c0cb;dashed=1;dashPattern=5 4;externo=1;" + FUENTE)
 
-
-def _forma_propia(xml):
-    """Forma propia de draw.io (shape=stencil(…)): el XML de la forma comprimido como lo guarda draw.io."""
-    co = zlib.compressobj(9, zlib.DEFLATED, -15)
-    datos = co.compress(urllib.parse.quote(xml, safe="").encode("utf-8")) + co.flush()
-    return "stencil(" + base64.b64encode(datos).decode() + ")"
-
-
-# la nota es una anotación BPMN: un corchete con dos tramos cortos arriba y abajo, abierto a la derecha
-CORCHETE = _forma_propia('<shape w="100" h="100" aspect="variable" strokewidth="inherit"><foreground><path>'
-                         '<move x="10" y="0"/><line x="0" y="0"/><line x="0" y="100"/><line x="10" y="100"/>'
-                         '</path><stroke/></foreground></shape>')
-ESTILO_NOTA = (f"shape={CORCHETE};whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
-               "spacingLeft=8;fontSize=11;fontColor=#222222;fillColor=none;strokeColor=#4a5563;nota=1;")
-ESTILO_ASOCIACION = "html=1;dashed=1;dashPattern=1 3;endArrow=none;strokeColor=#4a5563;asociacion=1;"
+# la nota: un papel amarillo claro, con la letra normal, unido a su paso con una línea de puntos
+ESTILO_NOTA = ("rounded=1;arcSize=4;absoluteArcSize=1;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
+               "spacingLeft=8;spacingRight=6;fontSize=10;fontColor=#5a4a14;fillColor=#fffae6;strokeColor=#e7cf7a;nota=1;" + FUENTE)
+ESTILO_ASOCIACION = "html=1;dashed=1;dashPattern=1 3;endArrow=none;strokeColor=#d9bf5f;strokeWidth=1.2;asociacion=1;"
 CABECERA = 40            # ancho de la cabecera de cada carril
 ALTO_CARRIL = 140        # alto por defecto de un carril nuevo
 COLUMNA = 150            # separación horizontal entre pasos al colocar a mano
@@ -110,6 +139,166 @@ ID_NUESTRO = re.compile(r"^(ACT|GW|EV)-\d+$")
 
 class ErrorProceso(Exception):
     pass
+
+
+# ---------------------------------------------------------------- aspecto: tarjeta de las tareas y cabecera
+# Los adornos (el pictograma de cada tarea y la cabecera de la página) son imágenes sin texto: leer() no los toma por
+# pasos ni avisa de ellos. El pictograma es hijo de su tarea, así que se mueve con ella en draw.io.
+ICONOS = HERE.parent / "assets" / "iconos"
+CODIGO = re.compile(r"^(.*?)\s*(\[[^\]]+\])\s*$")   # «Nombre [EJ-01.001]»: el código del cliente, al final
+ICONO = 20
+ASPECTO = "aspecto=lamina;"   # en el pictograma: el .drawio ya tiene el aspecto actual (recolocar conserva sus estilos)
+
+
+def aspecto_actual(f):
+    """Si el .drawio abierto (un Fichero) ya tiene el aspecto actual: si no, al recolocar pasa a él."""
+    return any(ASPECTO in (cell.get("style") or "") for _, cell in f.celdas())
+
+
+NUEVO_PASO = re.compile(r"\bnuevo\b", re.I)   # «[nuevo paso 8]»: el código de un paso que no existía, resaltado
+
+
+CODIGO_ARRIBA = 14   # caracteres del código del cliente que caben arriba a la derecha, junto al pictograma
+
+
+def codigo_arriba(codigo):
+    """Si el código del cliente («[EJ-01.001]») va arriba a la derecha de la tarjeta: si cabe y no es un paso nuevo
+    (ese va debajo, en su píldora verde)."""
+    return len(codigo) <= CODIGO_ARRIBA and not NUEVO_PASO.search(codigo)
+
+
+def etiqueta_paso(tipo, nombre):
+    """Lo que se escribe en la celda de un paso. En una tarea, el código del cliente va en monoespaciada arriba a la
+    derecha, junto al pictograma, o, si no cabe, en una línea aparte debajo del nombre (en una píldora verde si dice
+    «nuevo»); leer() lo vuelve a juntar al final (_texto) y el nombre no cambia."""
+    m = CODIGO.match(nombre or "") if tipo in TAREAS else None
+    if not m or not m.group(1):
+        return nombre or ""
+    if codigo_arriba(m.group(2)):
+        # arriba a la derecha, a la altura del pictograma (el nombre empieza donde siempre); leer() lo pone al final
+        return (f'<div class="codigo" style="text-align:right;margin:-22px 0 8px 24px;line-height:14px;font-family:{MONO};'
+                f'font-size:9px;font-weight:normal;color:{APAGADO}">' + html.escape(m.group(2), quote=False) + "</div>"
+                + html.escape(m.group(1), quote=False))
+    if NUEVO_PASO.search(m.group(2)):
+        estilo = (f"font-family:{MONO};font-size:9px;font-weight:normal;color:#ffffff;background-color:{NUEVO[0]};"
+                  "border-radius:6px;padding:0 4px")
+    else:
+        estilo = f"font-family:{MONO};font-size:9px;font-weight:normal;color:{APAGADO}"
+    return (html.escape(m.group(1), quote=False) + f'<br><span style="{estilo}">' + html.escape(m.group(2), quote=False)
+            + "</span>")
+
+
+def etiqueta_flujo(texto, color=None):
+    """Lo que se escribe en la celda de un flujo: la etiqueta en una píldora blanca con el borde del color de la línea
+    (sin color, la de un mensaje, sin píldora). leer() se queda con el texto (_texto)."""
+    if not texto or not color:
+        return texto or ""
+    return (f'<span style="border:1px solid {color};border-radius:8px;padding:0 4px;background-color:#ffffff">'
+            + html.escape(texto, quote=False) + "</span>")
+
+
+def _uri_svg(svg):
+    return "data:image/svg+xml," + base64.b64encode(svg.encode("utf-8")).decode("ascii")
+
+
+def adorno_tarea(pid, tipo):
+    """(atributos, geometría) del pictograma de una tarea: hijo de la tarea, centrado arriba. None si no es tarea."""
+    if tipo not in TAREAS:
+        return None
+    tinta, placa = SISTEMA if tipo in ("sistema", "script") else USUARIO
+    icono = (ICONOS / f"{tipo}.svg").read_text(encoding="utf-8")
+    trazos = re.search(r"<svg[^>]*>(.*)</svg>", icono, re.S).group(1)
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{ICONO}" height="{ICONO}" viewBox="0 0 {ICONO} {ICONO}">'
+           f'<rect width="{ICONO}" height="{ICONO}" rx="6" fill="{placa}"/><g transform="translate(3,3) scale(0.5833)" '
+           f'fill="none" stroke="{tinta}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">{trazos}</g></svg>')
+    atributos = {"id": f"{pid}-icono", "value": "", "vertex": "1", "parent": pid,
+                 "style": f"shape=image;image={_uri_svg(svg)};imageAspect=1;adorno=1;{ASPECTO}editable=0;resizable=0;rotatable=0;"}
+    geometria = {"x": "8", "y": "8", "width": str(ICONO), "height": str(ICONO), "as": "geometry"}
+    return atributos, geometria
+
+
+def _xml_adorno(adorno):
+    at, g = adorno
+    return ("<mxCell " + " ".join(f'{k}="{_xml_attr(v)}"' for k, v in at.items()) + "><mxGeometry "
+            + " ".join(f'{k}="{v}"' for k, v in g.items()) + "/></mxCell>")
+
+
+def es_adorno(cell):
+    return "adorno=1" in (cell.get("style") or "")
+
+
+def claves_leyenda(proc, retornos=False):
+    """Las claves de la leyenda, en orden: solo lo que sale en el diagrama (líneas, tareas, puertas, eventos, supuestos
+    y notas), para que quien lo lee sepa qué es cada cosa sin la guía."""
+    tipos = {p.get("tipo") for p in proc.get("pasos", [])}
+    ext = set(proc.get("externos") or [])
+    claves = [(f'<line x1="0" y1="0" x2="26" y2="0" stroke="{SECUENCIA}" stroke-width="1.5"/>', "secuencia")]
+    if retornos:
+        claves.append((f'<line x1="0" y1="0" x2="26" y2="0" stroke="{RETORNO}" stroke-width="1.6"/>', "vuelta atrás"))
+    if any(f["de"] in ext or f["a"] in ext for f in proc.get("flujos", [])):
+        claves.append((f'<line x1="0" y1="0" x2="26" y2="0" stroke="{NEUTRO}" stroke-width="1.2" stroke-dasharray="5 4"/>',
+                       "mensaje con un externo"))
+    if tipos & {"tarea", "manual", "subproceso", "llamada"}:
+        claves.append((f'<rect x="8" y="-6" width="12" height="12" rx="3" fill="{USUARIO[1]}" stroke="{USUARIO[0]}"/>',
+                       "tarea de usuario"))
+    if tipos & {"sistema", "script"}:
+        claves.append((f'<rect x="8" y="-6" width="12" height="12" rx="3" fill="{SISTEMA[1]}" stroke="{SISTEMA[0]}"/>',
+                       "tarea de sistema"))
+    if tipos & PUERTAS:
+        claves.append((f'<path d="M14 -7 L21 0 L14 7 L7 0 Z" fill="#fff6e5" stroke="{AMBAR}" stroke-width="1.3"/>',
+                       "decisión"))
+    if tipos & INICIOS:
+        claves.append((f'<circle cx="14" cy="0" r="6" fill="#e8f6ee" stroke="{VERDE}" stroke-width="1.6"/>', "inicio"))
+    if "fin" in tipos:
+        claves.append((f'<circle cx="14" cy="0" r="6" fill="#fdecea" stroke="{ROJO}" stroke-width="2.2"/>', "fin"))
+    doble = f'<circle cx="14" cy="0" r="6.5" fill="#eef1f6" stroke="{AZUL}"/><circle cx="14" cy="0" r="4.8" fill="none" stroke="{AZUL}"/>'
+    if "mensaje" in tipos:
+        claves.append((doble + f'<rect x="11.5" y="-1.8" width="5" height="3.6" fill="{AZUL}"/>', "aviso o correo"))
+    if "temporizador" in tipos:
+        claves.append((doble + f'<path d="M14 -2.6 L14 0 L15.8 1" fill="none" stroke="{AZUL}" stroke-width="0.9"/>',
+                       "plazo o espera"))
+    if "error" in tipos:
+        claves.append((f'<circle cx="14" cy="0" r="6" fill="#fdecea" stroke="{ROJO}"/>'
+                       f'<path d="M11.5 2.5 L13 -2.5 L15 0.5 L16.5 -2.5" fill="none" stroke="{ROJO}" stroke-width="1"/>',
+                       "error"))
+    if any(p.get("supuesto") for p in proc.get("pasos", [])):
+        claves.append((f'<rect x="7" y="-6" width="14" height="12" rx="3" fill="#ffffff" stroke="#b86e00" '
+                       'stroke-dasharray="3 2"/>', "supuesto por confirmar"))
+    if proc.get("notas"):
+        claves.append(('<rect x="7" y="-6" width="14" height="12" rx="1.5" fill="#fffae6" stroke="#e7cf7a"/>', "nota"))
+    return claves
+
+
+def cabecera(titulo, ancho, proc, retornos=False, pre=""):
+    """La cabecera de una página: el título del proceso y la leyenda de lo que sale en él, encima de los carriles."""
+    claves = claves_leyenda(proc, retornos)
+    largo = sum(36 + len(t) * 5.6 + 18 for _, t in claves)
+    ancho = max(ancho, largo + 300)
+    x, leyenda = 0, ""
+    for marca, texto in claves:
+        leyenda += f'<g transform="translate({x},0)">{marca}<text x="34" y="4">{texto}</text></g>'
+        x += 36 + len(texto) * 5.6 + 18
+    # el título, en 24 px o más pequeño si no cabe en el ancho (unos 0,58 de su cuerpo por letra, en negrita); si no
+    # deja sitio a la leyenda a su derecha, la leyenda va debajo
+    letra = max(14, min(24, int(ancho / (max(len(titulo), 1) * 0.58))))
+    debajo = len(titulo) * letra * 0.58 + 40 + largo > ancho
+    alto, ly, lx = (76, 54, 0) if debajo else (56, 26, max(ancho - largo, 0))
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{ancho:.0f}" height="{alto}" viewBox="0 0 {ancho:.0f} {alto}">'
+           f'<text x="0" y="30" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="{letra}" font-weight="700" '
+           f'fill="{TINTA}">{html.escape(titulo, quote=False)}</text>'
+           f'<g font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="11" fill="{SUAVE}" '
+           f'transform="translate({lx:.0f},{ly})">{leyenda}</g>'
+           f'<line x1="0" y1="{alto - 8}" x2="{ancho:.0f}" y2="{alto - 8}" stroke="{LINEA}"/></svg>')
+    return (f'<mxCell id="{pre}cabecera" value="" style="shape=image;image={_uri_svg(svg)};imageAspect=0;adorno=1;'
+            f'editable=0;" vertex="1" parent="1"><mxGeometry x="0" y="{-12 - alto}" width="{ancho:.0f}" height="{alto}" '
+            'as="geometry"/></mxCell>')
+
+
+def es_retorno(f, centro, externos=()):
+    """Si un flujo de secuencia vuelve a un paso anterior: su destino queda a la izquierda de su origen."""
+    if f["de"] in externos or f["a"] in externos or f["de"] not in centro or f["a"] not in centro:
+        return False
+    return centro[f["a"]][0] < centro[f["de"]][0] - 20
 
 
 def con_lado(estilo, lado):
@@ -122,11 +311,11 @@ def con_lado(estilo, lado):
     return ";".join(partes) + ";"
 
 
-def estilo_flujo(f, externos=()):
-    """Estilo de un flujo: de secuencia (discontinuo o por defecto) o de mensaje, si une con un externo."""
+def estilo_flujo(f, externos=(), retorno=False):
+    """Estilo de un flujo: de secuencia (discontinuo, por defecto o de vuelta atrás) o de mensaje, si une con un externo."""
     if f["de"] in externos or f["a"] in externos:
         return ESTILO_MENSAJE
-    return ESTILO_FLUJO + ("dashed=1;" if f.get("discontinuo") else "") + (DEFECTO if f.get("defecto") else "")
+    return (ESTILO_RETORNO if retorno else ESTILO_FLUJO) + ("dashed=1;" if f.get("discontinuo") else "") + (DEFECTO if f.get("defecto") else "")
 
 
 def es_mensaje(f, proc):
@@ -186,9 +375,49 @@ def contornos(proc):
     return out
 
 
+def letra_tarea(nombre, tam=None):
+    """El cuerpo de letra de una tarea para que su nombre quepa en la tarjeta, debajo del pictograma: 11 px y, si no
+    cabe, 10 o 9. La medida es aproximada y por exceso (cada letra, algo más de media letra de ancho)."""
+    w, h = tam or TAM["tarea"]
+    m = CODIGO.match(nombre or "")
+    texto, codigo = (m.group(1), not codigo_arriba(m.group(2))) if m and m.group(1) else (nombre or "", False)
+    for letra in (11, 10, 9):
+        lineas, actual = 1, 0
+        for palabra in texto.split():
+            largo = len(palabra) * letra * 0.6
+            if actual and actual + letra * 0.3 + largo > w - 10:
+                lineas += 1
+                actual = largo
+            else:
+                actual += (letra * 0.3 if actual else 0) + largo
+        if lineas * letra * 1.2 + (11 if codigo else 0) <= h - 32 - 2:
+            return letra
+    return 9
+
+
 def estilo_paso(p, contorno=None):
-    """El estilo de un paso: el de su tipo con su contorno (de contornos())."""
-    return con_contorno(ESTILO[p["tipo"]], contorno)
+    """El estilo de un paso: el de su tipo con su contorno (de contornos()). Una tarea con un nombre largo, con la
+    letra un poco más pequeña para que quepa."""
+    estilo = ESTILO[p["tipo"]]
+    if p["tipo"] in TAREAS:
+        letra = letra_tarea(p.get("nombre"))
+        if letra != 11:
+            estilo = estilo.replace("fontSize=11;", f"fontSize={letra};", 1)
+    return con_supuesto(con_contorno(estilo, contorno), p)
+
+
+def con_supuesto(estilo, p):
+    """El estilo con el borde de supuesto si el paso lo es, o sin él si ya no lo es."""
+    for marca in (SUPUESTO_TAREA, SUPUESTO):
+        estilo = estilo.replace(marca, "")
+    if p.get("supuesto"):
+        estilo += SUPUESTO_TAREA if p["tipo"] in TAREAS else SUPUESTO
+    return estilo
+
+
+def supuestos(proc):
+    """Las líneas «ACT-03 «Revisar»: texto» de los pasos supuestos, para listarlos al crear o actualizar."""
+    return [f"{p['id']} «{p.get('nombre') or p['tipo']}»: {p['supuesto']}" for p in proc["pasos"] if p.get("supuesto")]
 
 
 # ---------------------------------------------------------------- proceso (JSON)
@@ -203,7 +432,7 @@ def guardar_json(proc, ruta):
 
 def estructura(proc):
     """El proceso sin posiciones, ordenado de forma estable, para comparar. Un dato de Appian vacío cuenta como ausente."""
-    pasos = sorted(({**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **{k: "" for k in DATOS_PASO},
+    pasos = sorted(({**{k: p[k] for k in ("id", "tipo", "carril")}, "nombre": p.get("nombre", "") or "", **{k: "" for k in DATOS_PASO},
                      **datos(p, DATOS_PASO)} for p in proc["pasos"]), key=lambda p: p["id"])
     flujos = sorted(({"de": f["de"], "a": f["a"], "etiqueta": f.get("etiqueta", "") or "",
                       "discontinuo": bool(f.get("discontinuo")), "defecto": bool(f.get("defecto")),
@@ -345,6 +574,9 @@ def validar(proc):
             err.append(f"una nota es de {n.get('paso')}, que no existe")
         elif not n.get("texto"):
             av.append(f"{n['paso']} tiene una nota sin texto")
+        elif len(n["texto"]) > NOTA_LARGA:
+            av.append(f"{n['paso']}: la nota tiene {len(n['texto'])} caracteres; deja en ella la frase que hay que ver en el "
+                      f"diagrama (unos {NOTA_LARGA}) y lleva el resto al paso a paso o a supuestos-X.md")
     for p in proc.get("pasos", []):
         falta = [k for k in ("id", "tipo", "carril", "nombre") if not p.get(k) and not (k == "nombre" and p.get("tipo") in PUERTAS | EVENTOS)]
         if falta:
@@ -401,11 +633,70 @@ def validar(proc):
             av.append(f"{pid}: un evento de error va en el borde de la tarea en la que salta; únelo a ella con un flujo discontinuo")
         if p.get("proceso_llamado") and p["tipo"] != "llamada":
             av.append(f"{pid}: proceso_llamado solo se usa en un paso de tipo llamada")
+        if "supuesto" in p and not isinstance(p["supuesto"], str):
+            av.append(f"{pid}: supuesto es el texto de lo que se supone («quién lo hace no lo dice ninguna fuente»)")
         if p.get("temporizador") and p["tipo"] not in ("temporizador", "inicio_temporizador"):
             av.append(f"{pid}: temporizador solo se usa en un paso de tipo temporizador o inicio_temporizador")
         if es_si(p.get("interrumpe")) and (p["tipo"] != "temporizador" or not unido):
             av.append(f"{pid}: interrumpe solo se usa en un temporizador unido a su tarea con un flujo discontinuo")
+    av += _avisos_de_estructura(pasos, ent, sal)
     return err, av
+
+
+def _avisos_de_estructura(pasos, ent, sal):
+    """Reglas de estilo de BPMN que dan siempre lo mismo con los mismos datos: una tarea con varias salidas sin puerta
+    (en BPMN se siguen todas a la vez), una puerta que une y divide a la vez, una exclusiva que divide sin pregunta,
+    caminos que se juntan en una puerta de otro tipo que la que los abrió y dos tareas con el mismo nombre."""
+    av = []
+    secuencia = {pid: [f for f in sal.get(pid, []) if not f.get("discontinuo")] for pid in pasos}
+    for pid, p in pasos.items():
+        salen = secuencia[pid]
+        if p["tipo"] in TAREAS and len(salen) > 1:
+            av.append(f"{pid} ({p.get('nombre', '')}) tiene {len(salen)} salidas sin puerta: en BPMN se siguen todas a la "
+                      "vez; si es una decisión, pon detrás una puerta exclusiva con la pregunta, y si van a la vez, una paralela")
+        if p["tipo"] in PUERTAS and len(ent.get(pid, [])) > 1 and len(salen) > 1:
+            av.append(f"{pid}: une y divide a la vez; pon antes una puerta que solo una los caminos")
+        if p["tipo"] in ("exclusiva", "inclusiva") and len(salen) > 1 and not str(p.get("nombre") or "").strip().endswith("?"):
+            av.append(f"{pid} ({p.get('nombre') or 'sin nombre'}): una puerta que divide lleva una pregunta cerrada («¿Completa?»)")
+    # caminos que abre una puerta y se juntan en una de otro tipo: una paralela cerrada con una exclusiva repite lo que
+    # sigue, y una exclusiva cerrada con una paralela bloquea el proceso
+    def alcanza(desde, sin, hacia_atras=False):
+        vistos, pila = set(), [desde]
+        while pila:
+            n = pila.pop()
+            if n in vistos or n == sin or n not in pasos:
+                continue
+            vistos.add(n)
+            pila += ([f["de"] for f in ent.get(n, []) if not f.get("discontinuo")] if hacia_atras
+                     else [f["a"] for f in secuencia.get(n, [])])
+        return vistos
+    for pid, p in pasos.items():
+        salen = secuencia[pid]
+        if p["tipo"] not in PUERTAS or len(salen) < 2:
+            continue
+        ramas = [alcanza(f["a"], pid) for f in salen]
+        en_bucle = set().union(*(alcanza(f["de"], None, hacia_atras=True) for f in ent.get(pid, [])))   # lo que vuelve antes de la puerta
+        comunes = {n for n in set().union(*ramas) if sum(n in r for r in ramas) > 1} - en_bucle
+        propios = (set().union(*ramas) - comunes) | {pid}  # lo que va por una sola rama
+        for n in sorted(comunes):
+            if sum(f["de"] in propios for f in ent.get(n, [])) < 2:
+                continue                                   # no es donde se juntan, sino algo posterior
+            q = pasos[n]
+            if p["tipo"] in ("paralela", "inclusiva") and q["tipo"] != p["tipo"]:
+                av.append(f"los caminos que abre {pid} ({p['tipo']}) se juntan en {n}, que no es una puerta {p['tipo']}: "
+                          f"ciérralos con una puerta {p['tipo']}")
+            elif p["tipo"] == "exclusiva" and q["tipo"] == "paralela":
+                av.append(f"los caminos que abre {pid} (exclusiva) se juntan en {n}, una puerta paralela que esperaría a "
+                          "todos: el proceso se quedaría parado")
+    nombres = {}
+    for pid, p in pasos.items():
+        if p["tipo"] in TAREAS and p.get("nombre"):
+            sin_codigo = re.sub(r"\s*\[[^\]]*\]\s*$", "", p["nombre"]).strip().lower()   # el código del cliente no cuenta
+            nombres.setdefault(sin_codigo, []).append(pid)
+    for ids in nombres.values():
+        if len(ids) > 1:
+            av.append(f"{', '.join(ids)} se llaman igual («{pasos[ids[0]]['nombre']}»): el nombre dice qué hace cada una")
+    return av
 
 
 # ---------------------------------------------------------------- tramos
@@ -472,13 +763,58 @@ def _celda(cid, valor, atributos, geometria, datos_appian=None):
     return f'<mxCell id="{_xml_attr(cid)}" value="{_xml_attr(valor)}" {atributos}>{geometria}</mxCell>'
 
 
-def entrada_mensaje(f, centro, ancho, externos):
+def entrada_mensaje(f, centro, ancho, externos, sitio=0.5, ancho_paso=0):
     """Puntos de salida y entrada de un flujo de mensaje: en vertical entre el paso y su participante externo
-    (que ocupa todo el ancho, desde x=0)."""
+    (que ocupa todo el ancho, desde x=0). `sitio` es dónde toca el borde del paso (de 0 a 1, de izquierda a derecha;
+    `ancho_paso`, su ancho): si un paso tiene varios mensajes, cada uno va por su vertical y no se pisan."""
+    paso = f["de"] if f["a"] in externos else f["a"]
+    x = (centro[paso][0] + (sitio - 0.5) * ancho_paso) / ancho
     if f["a"] in externos:
-        return f"exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX={centro[f['de']][0] / ancho:.4f};entryY=0;entryDx=0;entryDy=0;"
-    return f"exitX={centro[f['a']][0] / ancho:.4f};exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+        return f"exitX={sitio:.4f};exitY=1;exitDx=0;exitDy=0;entryX={x:.4f};entryY=0;entryDx=0;entryDy=0;"
+    return f"exitX={x:.4f};exitY=0;exitDx=0;exitDy=0;entryX={sitio:.4f};entryY=1;entryDx=0;entryDy=0;"
 
+
+
+def _vertical_mensaje(f, centro, tam, geo, externos, sitio, proc, caminos=(), etiquetas=()):
+    """Por dónde baja un flujo de mensaje de su paso a su participante sin pisar otra forma, su nombre ni la etiqueta
+    de otro flujo (`etiquetas`, sus cajas): (sitio, [])
+    con el sitio del borde del paso más cercano al pedido cuya vertical está libre o, si ninguna lo está, (sitio,
+    puntos) con un quiebro justo debajo del paso hasta la vertical libre más cercana."""
+    paso = f["de"] if f["a"] in externos else f["a"]
+    ext = f["a"] if f["a"] in externos else f["de"]
+    (cx, cy), (w, h) = centro[paso], tam
+    y0, y1 = cy + h / 2, geo["externos"][ext][0]
+    if y1 <= y0:
+        return sitio, []
+    obst = [c for c in _cajas(proc, geo) if not (c[0] <= cx <= c[0] + c[2] and c[1] <= cy <= c[1] + c[3])]
+    obst += list(etiquetas)
+
+    verticales = [(p[0], min(p[1], q[1]), max(p[1], q[1])) for c in caminos for p, q in zip(c, c[1:]) if abs(p[0] - q[0]) <= 1]
+
+    def libre(x, desde):
+        # ni por una forma o un nombre, ni pegado a la vertical de otro flujo, que parecería el mismo
+        return not any(c[0] - 12 < x < c[0] + c[2] + 12 and c[1] < y1 and c[1] + c[3] > desde for c in obst) and \
+            not any(abs(vx - x) < 12 and a < y1 and b > desde for vx, a, b in verticales)
+    for s in sorted({sitio} | {k / 20 for k in range(2, 19)}, key=lambda s: abs(s - sitio)):
+        if libre(cx + (s - 0.5) * w, y0):
+            return s, []
+    quiebro = y0 + 16
+    if any(c[0] < cx + w / 2 and c[0] + c[2] > cx - w / 2 and c[1] < quiebro + 4 and c[1] + c[3] > y0 for c in obst):
+        return sitio, []
+    x0 = cx + (sitio - 0.5) * w
+    for d in range(int(w / 2) + 12, int(geo["ancho"]), 8):
+        for x in (cx + d, cx - d):
+            if 8 < x < geo["ancho"] - 8 and libre(x, quiebro - 4) and \
+                    not any(c[1] < quiebro < c[1] + c[3] and c[0] < max(x, x0) and c[0] + c[2] > min(x, x0) for c in obst):
+                # el tramo corto hasta el quiebro, tampoco por donde sale o llega un flujo de secuencia (se leería como
+                # una flecha con dos puntas): del lado de la vertical libre, para que el quiebro no lo cruce
+                sitios = [s for s in {sitio} | {k / 20 for k in range(2, 19)}
+                          if not any(abs(vx - (cx + (s - 0.5) * w)) < 12 and a < quiebro and b > y0 - 1 for vx, a, b in verticales)]
+                if sitios:
+                    sitio = min(sitios, key=lambda s: (abs(cx + (s - 0.5) * w - x), abs(s - sitio)))
+                    x0 = cx + (sitio - 0.5) * w
+                return sitio, [(x0, quiebro), (x, quiebro)]
+    return sitio, []
 
 def entrada_asociacion(lado, nota=None, paso=None):
     """Línea de la nota a su paso, en vertical por donde se solapan en horizontal; si no se solapan (una nota al lado de
@@ -548,7 +884,10 @@ def _sitio_etiqueta(camino, otros=(), etiqueta=None):
     for k in horizontales:
         p = camino[k]
         for a, b in _trozos_libres(p, camino[k + 1], otros):
-            if mejor is None or b - a > mejor[0]:
+            if etiqueta:
+                # sin pisar una forma, la etiqueta de un evento o puerta ni una nota: el hueco más largo del trozo
+                a, b = _hueco_sin_cajas(a, b, p[1], *etiqueta)
+            if b > a and (mejor is None or b - a > mejor[0]):
                 mejor = (b - a, sum(largos[:k]) + abs((a + b) / 2 - p[0]))
     if etiqueta and (mejor is None or mejor[0] < etiqueta[0] + 2 * colocacion.AIRE_ETIQUETA):
         mejor = _sitio_en_vertical(camino, largos, otros, *etiqueta) or mejor
@@ -556,6 +895,43 @@ def _sitio_etiqueta(camino, otros=(), etiqueta=None):
         k = max(horizontales, key=lambda k: largos[k])
         mejor = (0, sum(largos[:k]) + largos[k] / 2)
     return 2 * mejor[1] / sum(largos) - 1
+
+
+def _punto_en(camino, sitio):
+    """El punto del camino en la posición relativa `sitio` de draw.io (de -1, el origen, a 1, el destino)."""
+    largos = [abs(q[0] - p[0]) + abs(q[1] - p[1]) for p, q in zip(camino, camino[1:])]
+    d = (sitio + 1) / 2 * sum(largos)
+    for (p, q), largo in zip(zip(camino, camino[1:]), largos):
+        if d <= largo and largo:
+            f = d / largo
+            return p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f
+        d -= largo
+    return camino[-1]
+
+
+def _pisa(centro, ancho, cajas):
+    """Si la etiqueta de un flujo (`ancho`) con su centro en `centro` pisa alguna de las `cajas` (x, y, w, h)."""
+    x0, y0 = centro[0] - ancho / 2, centro[1] - ALTO_ETIQUETA_FLUJO / 2
+    return any(x0 < x + w and x < x0 + ancho and y0 < y + h and y < y0 + ALTO_ETIQUETA_FLUJO for x, y, w, h in cajas)
+
+
+def _hueco_sin_cajas(a, b, y, ancho, cajas):
+    """El trozo de [a, b] (en x, a la altura `y`) donde la etiqueta de un flujo (`ancho`) cabe entera sin pisar
+    ninguna de las `cajas` (x, y, w, h): el de más sitio para su centro, devuelto de borde a borde de la etiqueta (su
+    centro es el del trozo y su largo, al menos el de la etiqueta); (a, a) si no cabe en ninguno."""
+    semiancho = ancho / 2 + colocacion.AIRE_ETIQUETA
+    semialto = ALTO_ETIQUETA_FLUJO / 2 + colocacion.AIRE_ETIQUETA
+    a, b = min(a, b), max(a, b)
+    libres = [(a + semiancho, b - semiancho)] if b - a >= 2 * semiancho else []
+    for x, cy, w, h in cajas:
+        if cy >= y + semialto or cy + h <= y - semialto:
+            continue
+        lo, hi = x - semiancho, x + w + semiancho
+        libres = [(u, v) for desde, hasta in libres for u, v in ((desde, min(hasta, lo)), (max(desde, hi), hasta)) if v >= u]
+    if not libres:
+        return a, a
+    u, v = max(libres, key=lambda r: r[1] - r[0])
+    return u - semiancho, v + semiancho
 
 
 def _sitio_en_vertical(camino, largos, otros, ancho, cajas):
@@ -600,6 +976,50 @@ def _cajas(proc, geo):
     return cajas
 
 
+NOTA_LARGA = 150   # caracteres: más, y la nota agranda el carril y se lee como un párrafo
+AIRE_NOTA = 10   # entre una nota y la línea de un flujo: más cerca, la línea parece el corchete o pisa el texto
+
+
+def _apartar_notas(proc, geo):
+    """Corre en horizontal cada nota que pisa la línea de un flujo de secuencia (o va pegada a ella) hasta el sitio
+    libre más cercano que no pise otra forma, sin dejar de estar sobre su paso ni salirse de la página. Si no cabe a
+    su ancho, la estrecha; si la línea pasa entre ella y su paso, la aleja un poco de él, dentro de su carril."""
+    notas, cajas_notas = proc.get("notas") or [], list(geo.get("anotaciones") or [])
+    if not notas or not geo.get("flujos"):
+        return
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    centro = {pid: geo["pasos"][pid][:2] for pid in geo["pasos"]}
+    tramos = []
+    for i, f in enumerate(proc["flujos"][:len(geo["flujos"])]):
+        if f["de"] in centro and f["a"] in centro and f["de"] != f["a"]:
+            camino = _camino(centro[f["de"]], TAM[tipo[f["de"]]], geo["flujos"][i], centro[f["a"]], TAM[tipo[f["a"]]])
+            tramos += list(zip(camino, camino[1:]))
+
+    def pisa_linea(x, y, w, h):
+        return any(min(p[0], q[0]) < x + w + AIRE_NOTA and max(p[0], q[0]) > x - AIRE_NOTA and
+                   min(p[1], q[1]) < y + h + AIRE_NOTA and max(p[1], q[1]) > y - AIRE_NOTA for p, q in tramos)
+    for k, (n, (x, y, w, h)) in enumerate(zip(notas, cajas_notas)):
+        if not pisa_linea(x, y, w, h):
+            continue
+        pcx, (pw, ph) = centro[n["paso"]][0], TAM[tipo[n["paso"]]]
+        otras = [c for c in _cajas(proc, geo) if c != (x, y, w, h)]
+        arriba = y + h / 2 < centro[n["paso"]][1]
+        ly, lh = next(geo["carriles"][p["carril"]] for p in proc["pasos"] if p["id"] == n["paso"])
+        # si a su ancho no cabe entre dos líneas, más estrecha (y más alta, sin acercarse a su paso); si la línea
+        # pasa entre la nota y su paso, un poco más lejos de él, sin salirse del carril
+        for nw, dy, d in ((nw, dy, d) for nw in range(int(w), 103, -8) for dy in range(0, 41, 4)
+                          for d in sorted(range(-nw, nw + 1, 4), key=abs)):
+            nh = h if nw == int(w) else max(36, colocacion.alto_texto(n.get("texto"), nw) + 12)
+            ny, nx = (y + h - nh - dy) if arriba else (y + dy), x + (w - nw) / 2 + d
+            if (ny < min(y, ly + 30) or ny + nh > max(y + h, ly + lh - 4) or nx < 8 or nx + nw > geo["ancho"] - 8
+                    or nx > pcx + pw / 2 - 8 or nx + nw < pcx - pw / 2 + 8):
+                continue
+            if not pisa_linea(nx, ny, nw, nh) and not any(nx < c[0] + c[2] and c[0] < nx + nw and ny < c[1] + c[3]
+                                                          and c[1] < ny + nh for c in otras):
+                cajas_notas[k] = (nx, ny, nw, nh)
+                geo["anotaciones"] = cajas_notas
+                break
+
 def _celdas(proc, geo, pre=""):
     """Las celdas de una página, sin las dos de la raíz. `geo` = {"carriles": {nombre: (y, h)}, "ancho": w,
     "pasos": {id: (cx, cy)} (centro absoluto), "flujos": [[(x, y), ...] por flujo en el orden de proc],
@@ -612,7 +1032,7 @@ def _celdas(proc, geo, pre=""):
     for i, c in enumerate(proc["carriles"], 1):
         y, h = geo["carriles"][c]
         lane_id[c] = f"{pre}carril-{i}"
-        celdas.append(f'<mxCell id="{lane_id[c]}" value="{_xml_attr(c)}" style="{ESTILO_CARRIL}" vertex="1" parent="1">'
+        celdas.append(f'<mxCell id="{lane_id[c]}" value="{_xml_attr(c)}" style="{estilo_carril(i, c)}" vertex="1" parent="1">'
                       f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
     contorno = contornos(proc)
     for p in proc["pasos"]:
@@ -620,9 +1040,12 @@ def _celdas(proc, geo, pre=""):
         cx, cy = geo["pasos"][p["id"]]
         ly = geo["carriles"][p["carril"]][0]
         estilo = con_lado(estilo_paso(p, contorno.get(p["id"])), geo.get("etiquetas", {}).get(p["id"]))
-        celdas.append(_celda(p["id"], p.get("nombre", ""), f'style="{estilo}" vertex="1" parent="{lane_id[p["carril"]]}"',
+        celdas.append(_celda(p["id"], etiqueta_paso(p["tipo"], p.get("nombre", "")),
+                             f'style="{estilo}" vertex="1" parent="{lane_id[p["carril"]]}"',
                              f'<mxGeometry x="{cx - w / 2:.0f}" y="{cy - ly - h / 2:.0f}" width="{w}" height="{h}" '
                              'as="geometry"/>', datos(p, DATOS_PASO)))
+        if adorno_tarea(p["id"], p["tipo"]):
+            celdas.append(_xml_adorno(adorno_tarea(p["id"], p["tipo"])))
     ext_id = {}
     for i, e in enumerate(proc.get("externos") or [], 1):
         y, h = geo["externos"][e][:2]
@@ -630,6 +1053,7 @@ def _celdas(proc, geo, pre=""):
         celdas.append(f'<mxCell id="{ext_id[e]}" value="{_xml_attr(e)}" style="{ESTILO_EXTERNO}" vertex="1" parent="1">'
                       f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
     centro = {pid: geo["pasos"][pid][:2] for pid in geo["pasos"]}
+    _apartar_notas(proc, geo)
     for i, (n, caja) in enumerate(zip(proc.get("notas") or [], geo.get("anotaciones") or []), 1):
         x, y, w, h = caja
         carril = next(p["carril"] for p in proc["pasos"] if p["id"] == n["paso"])
@@ -646,16 +1070,46 @@ def _celdas(proc, geo, pre=""):
     fondo = max((y + h for y, h in (v[:2] for v in geo["carriles"].values())), default=0)
     tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
     caminos = {}          # los de la colocación por capas, para que la etiqueta de uno no quede donde pasa otro
-    if geo.get("etiqueta_en_horizontal"):
+    por_capas = geo.get("etiqueta_en_horizontal")
+    if geo.get("flujos"):   # con Mermaid, para ver si la etiqueta en su sitio de siempre (el centro) pisa algo
         caminos = {i: _camino(centro[f["de"]], TAM[tipo[f["de"]]], geo["flujos"][i - 1], centro[f["a"]], TAM[tipo[f["a"]]])
                    for i, f in enumerate(proc["flujos"], 1)
                    if f["de"] in centro and f["a"] in centro and f["de"] != f["a"] and i - 1 < len(geo["flujos"])}
         cajas = _cajas(proc, geo)
+    etiquetas = []        # dónde va la etiqueta de cada flujo de secuencia, para que un mensaje no baje por encima
     for i, f in enumerate(proc["flujos"], 1):
-        st = estilo_flujo(f, ext_id)
+        if f.get("etiqueta") and i in caminos:
+            w = colocacion.ancho_etiqueta_flujo(f["etiqueta"])
+            sitio = geo.get("etiquetas_flujo", {}).get(i - 1, None if por_capas else 0.0)
+            if sitio is None:
+                sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i], (w, cajas))
+            if sitio is not None:
+                x, y = _punto_en(caminos[i], sitio)
+                etiquetas.append((x - w / 2, y - ALTO_ETIQUETA_FLUJO / 2, w, ALTO_ETIQUETA_FLUJO))
+    mensajes = {}         # paso: los flujos de mensaje que lo tocan, en orden, para que cada uno vaya por su vertical
+    for i, f in enumerate(proc["flujos"], 1):
+        if (f["de"] in ext_id) != (f["a"] in ext_id):
+            mensajes.setdefault(f["de"] if f["a"] in ext_id else f["a"], []).append(i)
+    for i, f in enumerate(proc["flujos"], 1):
+        st = estilo_flujo(f, ext_id, es_retorno(f, centro, ext_id))
+        puntos_mensaje = []
         pos = ""
+        desvio = ""
         if f["de"] in ext_id or f["a"] in ext_id:
-            st += entrada_mensaje(f, centro, geo["ancho"], ext_id)
+            paso = f["de"] if f["a"] in ext_id else f["a"]
+            suyos = mensajes.get(paso, [i])
+            k, n = suyos.index(i) if i in suyos else 0, len(suyos)
+            sitio, puntos_mensaje = _vertical_mensaje(f, centro, TAM[tipo[paso]], geo, ext_id, (k + 1) / (n + 1), proc,
+                                                     list(caminos.values()), etiquetas)
+            st += entrada_mensaje(f, centro, geo["ancho"], ext_id, sitio, TAM[tipo[paso]][0])
+            if puntos_mensaje:
+                x_libre = puntos_mensaje[-1][0]
+                st = re.sub(r"(entryX|exitX)=[0-9.]+;(entryY=0|exitY=0)",
+                            lambda m: f"{m.group(1)}={x_libre / geo['ancho']:.4f};{m.group(2)}", st)
+            if n > 1 and f.get("etiqueta"):
+                # varias verticales juntas: la etiqueta, hacia fuera de la suya, para que no pise la de al lado
+                medio = colocacion.ancho_etiqueta_flujo(f["etiqueta"]) / 2 + 4
+                desvio = f'<mxPoint x="{-medio if k < n / 2 else medio:.0f}" y="0" as="offset"/>'
             # la etiqueta, en el hueco entre los carriles y los participantes, donde no hay otros flujos
             paso, ext = (f["de"], f["a"]) if f["a"] in ext_id else (f["a"], f["de"])
             ys = centro[paso][1] + TAM[tipo[paso]][1] / 2
@@ -666,17 +1120,27 @@ def _celdas(proc, geo, pre=""):
                 pos = f' x="{2 * min(max(frac, 0), 1) - 1:.3f}"'
         mensaje = f["de"] in ext_id or f["a"] in ext_id
         pts = geo["flujos"][i - 1] if i - 1 < len(geo.get("flujos", [])) and not mensaje else []
+        if mensaje and puntos_mensaje:
+            pts = puntos_mensaje if f["a"] in ext_id else puntos_mensaje[::-1]
         if f.get("etiqueta") and i in caminos:
-            sitio = geo.get("etiquetas_flujo", {}).get(i - 1)
-            if sitio is None:
-                sitio = _sitio_etiqueta(caminos[i], [c for j, c in caminos.items() if j != i],
-                                        (colocacion.ancho_etiqueta_flujo(f["etiqueta"]), cajas))
-            pos = f' x="{sitio:.3f}"' if sitio is not None else pos
+            # su sitio de siempre: el que validó la colocación por capas o, con Mermaid, el centro del flujo; si ahí pisa
+            # una forma, la etiqueta de un evento o una puerta o una nota, se busca otro en el flujo
+            w = colocacion.ancho_etiqueta_flujo(f["etiqueta"])
+            otros = [c for j, c in caminos.items() if j != i]
+            sitio = geo.get("etiquetas_flujo", {}).get(i - 1, None if por_capas else 0.0)
+            if sitio is None and por_capas:
+                sitio = _sitio_etiqueta(caminos[i], otros, (w, cajas))
+            if sitio is not None and _pisa(_punto_en(caminos[i], sitio), w, cajas):
+                otro = _sitio_etiqueta(caminos[i], otros, (w, cajas))
+                sitio = sitio if otro is None else otro
+            if sitio is not None and (por_capas or sitio):
+                pos = f' x="{sitio:.3f}"'
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
         de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])
-        celdas.append(_celda(f"{pre}F{i:02d}", f.get("etiqueta", ""),
+        color = None if f["de"] in ext_id or f["a"] in ext_id else _estilo(st).get("strokeColor")
+        celdas.append(_celda(f"{pre}F{i:02d}", etiqueta_flujo(f.get("etiqueta", ""), color),
                              f'style="{st}" edge="1" parent="1" source="{_xml_attr(de)}" target="{_xml_attr(a)}"',
-                             f'<mxGeometry{pos} relative="1" as="geometry">{arr}</mxGeometry>', datos(f, DATOS_FLUJO)))
+                             f'<mxGeometry{pos} relative="1" as="geometry">{arr}{desvio}</mxGeometry>', datos(f, DATOS_FLUJO)))
     return celdas
 
 
@@ -722,8 +1186,12 @@ def xml_drawio(paginas):
         uno = len(paginas) == 1
         titulo = titulo_pagina(proc, geo, k, len(paginas))
         hojas.append(f'<diagram id="{"proceso" if uno else f"tramo-{k}"}" name="' + _xml_attr(titulo)
-                     + '"><mxGraphModel grid="1" gridSize="10" page="0" math="0"><root><mxCell id="0"/>'
-                     '<mxCell id="1" parent="0"/>' + "".join(_celdas(proc, geo, "" if uno else f"t{k}-"))
+                     + f'"><mxGraphModel grid="1" gridSize="10" page="0" math="0" background="{PAPEL}"><root>'
+                     '<mxCell id="0"/><mxCell id="1" parent="0"/>'
+                     + cabecera(titulo, geo["ancho"], proc,
+                                any(es_retorno(f, geo["pasos"], proc.get("externos") or ()) for f in proc["flujos"]),
+                                "" if uno else f"t{k}-")
+                     + "".join(_celdas(proc, geo, "" if uno else f"t{k}-"))
                      + "</root></mxGraphModel></diagram>")
     return '<mxfile host="appian-analisis-funcional">' + "".join(hojas) + "</mxfile>"
 
@@ -751,6 +1219,9 @@ def _estilo(s):
 
 
 def _texto(v):
+    codigo = re.search(r'<div class="codigo"[^>]*>(.*?)</div>', v or "", flags=re.S)
+    if codigo:   # el código del cliente se dibuja arriba y va al final del nombre
+        v = v[:codigo.start()] + v[codigo.end():] + " " + codigo.group(1)
     v = re.sub(r"<br\s*/?>|</div>|</p>|<div[^>]*>|<p[^>]*>", " ", v or "", flags=re.I)
     v = re.sub(r"<[^>]+>", "", v)
     return re.sub(r"\s+", " ", html.unescape(v)).strip()
@@ -1207,8 +1678,10 @@ def es_nota(e):
 def tipo_de_estilo(e, n_ent, n_sal):
     """Tipo de paso según el estilo de draw.io. None si la forma no es un paso del proceso."""
     shape = e.get("shape") or (e["_base"][0] if e["_base"] else "")
-    if shape in ("text", "edgeLabel", "label", "note") or es_nota(e):
+    if shape in ("text", "edgeLabel", "label", "note") or es_nota(e) or e.get("adorno") == "1":
         return None
+    if e.get("tipo") in TIPOS:          # la tarjeta de una tarea: el tipo va en el estilo
+        return e["tipo"]
     if shape in ("mxgraph.bpmn.event", "mxgraph.bpmn.shape"):
         outline, symbol = e.get("outline", "standard"), e.get("symbol", "general")
         if symbol in ("exclusiveGw", "parallelGw", "inclusiveGw", "gateway"):
@@ -1276,11 +1749,11 @@ def comparar(antes, despues):
             out.append(("carril", f"carril quitado: «{c}»"))
     for pid, p in pd.items():
         if pid not in pa:
-            out.append(("paso", f"paso nuevo: {pid} {p['tipo']} «{p['nombre']}» en «{p['carril']}»"))
+            out.append(("paso", f"paso nuevo: {pid} {p['tipo']} «{p.get('nombre', '')}» en «{p['carril']}»"))
             continue
         q = pa[pid]
-        if q["nombre"] != p["nombre"]:
-            out.append(("paso", f"{pid} renombrado: «{q['nombre']}» → «{p['nombre']}»"))
+        if q.get("nombre", "") != p.get("nombre", ""):
+            out.append(("paso", f"{pid} renombrado: «{q.get('nombre', '')}» → «{p.get('nombre', '')}»"))
         if q["tipo"] != p["tipo"]:
             out.append(("paso", f"{pid} cambia de tipo: {q['tipo']} → {p['tipo']}"))
         if q["carril"] != p["carril"] and renombrado.get(q["carril"]) != p["carril"]:

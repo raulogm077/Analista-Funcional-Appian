@@ -8,7 +8,9 @@ etiquetas, los tipos de inicio y tarea, el flujo por defecto, los participantes 
 ancho del PNG. Comprueba también lo que se hace sin navegador, un proceso que no cabe en una página (tramos), que la
 colocación por capas no dibuje conexiones falsas ni deje las etiquetas pegadas a la flecha, que la etiqueta de cada
 salida de una puerta vaya sobre un tramo suyo (también en 1.170 procesos al azar), que la línea de una nota no cruce la
-etiqueta de su paso, el temporizador que interrumpe, los avisos sin capa y el error suelto en BPMN.
+etiqueta de su paso, que ninguna etiqueta de flujo pise nada (con Mermaid y sin navegador), el temporizador que
+interrumpe, los avisos sin capa, el error suelto en BPMN, el aspecto de las tarjetas y la cuadrícula (y que los .drawio de
+antes se sigan leyendo) y las salidas de una puerta en abanico, sin cruzarse.
 Sale con 0 si todo va bien (tarda unos tres minutos).
 
   python3 pruebas/appian-diagramas-bpmn/selftest.py
@@ -158,7 +160,7 @@ def datos_de_appian(tmp):
     obj.set("nodo", "40")
     g = obj.find("mxCell/mxGeometry"); g.set("y", str(float(g.get("y")) + 10))
     t.write(d, encoding="utf-8")
-    check("ACT-02: nodo «4» → «40»" in run("comparar", d, esperado=1), "comparar: lista un dato de Appian cambiado en draw.io")
+    check("ACT-02: nodo «4» → «40»" in run("comparar", d, esperado=3), "comparar: lista un dato de Appian cambiado en draw.io")
     run("comparar", d, "--aceptar")
     g = json.loads(d.with_suffix(".json").read_text(encoding="utf-8"))
     paso = {p["id"]: p for p in g["pasos"]}
@@ -266,7 +268,7 @@ def interrumpe(tmp):
     t = ET.parse(d)                       # en draw.io, «Editar datos»: se borra el dato
     next(e for e in t.getroot().iter("object") if e.get("id") == "EV-02").attrib.pop("interrumpe")
     t.write(d, encoding="utf-8")
-    check("EV-02: deja de interrumpir su tarea" in run("comparar", d, esperado=1, env=sin),
+    check("EV-02: deja de interrumpir su tarea" in run("comparar", d, esperado=3, env=sin),
           "interrumpe: comparar ve que se ha quitado en draw.io")
     run("comparar", d, "--aceptar", esperado=2, env=sin)
     paso, borde, _ = estado()
@@ -285,7 +287,7 @@ def interrumpe(tmp):
 
 
 def avisos(tmp):
-    """T7: un aviso a un perfil del proceso no se dibuja (SKILL.md lo dice) y uno a un sistema externo es un flujo de
+    """T7: un aviso del proceso se dibuja como un `mensaje`, nunca como una nota (SKILL.md lo dice), y uno a un sistema externo es un flujo de
     mensaje desde la tarea, que no añade capa: un proceso de 9 tareas con dos avisos al registro mide lo mismo que sin
     ellos."""
     sin = entorno(sin_navegador=True)
@@ -316,9 +318,19 @@ def avisos(tmp):
     check(ancho["con avisos"] == ancho["sin avisos"],
           "avisos: los avisos a un sistema externo, flujos de mensaje desde la tarea, no añaden capa "
           f"({', '.join(f'{k}: {v:.0f} px' for k, v in ancho.items())})")
-    skill = (SCRIPTS.parent / "SKILL.md").read_text(encoding="utf-8")
-    check("un aviso a un perfil del proceso no se dibuja" in skill.lower() and "en el carril «Aplicación»" not in skill,
-          "avisos: SKILL.md dice que un aviso a un perfil no se dibuja y ya no pide un mensaje en el carril «Aplicación»")
+    skill = (SCRIPTS.parent / "references" / "buen-proceso.md").read_text(encoding="utf-8")
+    sys.path.insert(0, str(SCRIPTS))
+    import colocacion as co
+    dos = {"pasos": [{"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"}],
+           "notas": [{"paso": "ACT-01", "texto": "Primera"}, {"paso": "ACT-01", "texto": "Segunda"}]}
+    lados = co.lados_nota(dos, {"ACT-01": {"abajo": {0}}}, {})
+    check(lados[0][0] != lados[1][0] or lados[0][1] != lados[1][1],
+          f"dos notas de un mismo paso no van en el mismo sitio, una encima de otra ({lados})")
+    regla = next((l for l in skill.splitlines() if l.startswith("- **Avisos:**")), "")
+    check("se dibuja como un `mensaje`" in regla and "nunca como una nota" in regla and "en su carril" in regla
+          and "correo general" in skill,
+          "avisos: buen-proceso.md dice que cada aviso va como un mensaje en el carril de quien lo envía, nunca como nota, "
+          "salvo el correo general de tareas asignadas")
 
 
 def cambios_temporales(tmp):
@@ -390,7 +402,7 @@ _JS_MEDIR_NOTAS = """async (xml) => {
     const lados = {arriba: 0, abajo: 0, izquierda: 0, derecha: 0};
     const centro = {arriba: [caja[0] + caja[2] / 2, caja[1]], abajo: [caja[0] + caja[2] / 2, caja[1] + caja[3]],
                     izquierda: [caja[0], caja[1] + caja[3] / 2], derecha: [caja[0] + caja[2], caja[1] + caja[3] / 2]};
-    for (const el of s.shape.node.querySelectorAll('path')) {
+    for (const el of s.shape.node.querySelectorAll('path, rect')) {
       const st = el.getAttribute('stroke');
       if (!st || st === 'none' || st === 'transparent' || el.getAttribute('visibility') === 'hidden') continue;
       const m = el.getScreenCTM(), largo = el.getTotalLength();
@@ -455,8 +467,8 @@ def nota_larga(tmp):
              if m["letras"][0] < m["caja"][0] - 1 or m["letras"][1] < m["caja"][1] - 1
              or m["letras"][2] > m["caja"][0] + m["caja"][2] + 1 or m["letras"][3] > m["caja"][1] + m["caja"][3] + 1]
     check(len(medidas) == 3 and not fuera, "notas: el texto largo cabe en su caja " + "; ".join(fuera))
-    abiertas = [m for m in medidas if m["lados"]["izquierda"] and not (m["lados"]["arriba"] or m["lados"]["abajo"] or m["lados"]["derecha"])]
-    check(len(abiertas) == 3, "notas: se dibujan como un corchete (sin los lados de arriba, abajo y derecha de punta a punta)")
+    papeles = [m for m in medidas if all(m["lados"][k] for k in ("izquierda", "arriba", "abajo", "derecha"))]
+    check(len(papeles) == 3, "notas: se dibujan como un papel, con sus cuatro lados")
 
 
 def caja_etiqueta(geo, paso, nombre):
@@ -552,12 +564,14 @@ def nota_a_mano(tmp):
 def nota_entre_filas(tmp):
     """Una nota manual evita cajas existentes cuando el otro lado está libre; no recoloca lo anterior."""
     import copy, diagrama, drawio_modelo as dm
+    medio = dm.TAM["tarea"][1] / 2        # las posiciones salen del alto de una tarea: ACT-02 está en y=325
+    encima, debajo = 325 - medio - 18 - 63, 325 + medio + 18   # la nota (63 de alto) a 18 de la tarea
     for nombre, superior, inferior, nota_previa, esperado in (
-            ("paso arriba", 180, None, False, 383),
-            ("arriba libre", 100, None, False, 204),
-            ("ambos ocupados", 180, 410, False, 204),
-            ("contacto borde", 164, None, False, 204),
-            ("nota arriba", 100, None, True, 383)):
+            ("paso arriba", 180, None, False, debajo),
+            ("arriba libre", 100, None, False, encima),
+            ("ambos ocupados", 180, 410, False, encima),
+            ("contacto borde", encima - medio, None, False, encima),
+            ("nota arriba", 100, None, True, debajo)):
         proc = {"proceso": "Notas entre filas", "carriles": ["Gestor"],
                 "pasos": [{"id": "ACT-01", "tipo": "tarea", "carril": "Gestor", "nombre": "Configurar"},
                           {"id": "ACT-02", "tipo": "tarea", "carril": "Gestor", "nombre": "Activar"}],
@@ -569,7 +583,7 @@ def nota_entre_filas(tmp):
             geo["pasos"]["ACT-03"] = (240, inferior)
         if nota_previa:
             proc["notas"] = [{"paso": "ACT-01", "texto": "Nota anterior"}]
-            geo["anotaciones"] = [(180, 204, 160, 63)]
+            geo["anotaciones"] = [(180, encima, 160, 63)]
         ruta = tmp / (nombre + ".drawio")
         dm.escribir_drawio(proc, geo, str(ruta))
         editor = diagrama.Editor(ruta)
@@ -636,6 +650,74 @@ def solapes(drawio):
             if a != b and ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah:
                 out.append(f"{a} / {b}")
     return out
+
+
+def etiquetas_de_flujo(drawio):
+    """Las cajas (texto, (x, y, w, h)) de las etiquetas de los flujos, donde las pinta draw.io: en su posición relativa
+    del trazado (de -1, el origen, a 1, el destino), más su desplazamiento. Los mensajes van en vertical del paso a su
+    participante, por el sitio que dicen exitX y entryX."""
+    import drawio_modelo as dm
+    proc, geo, _ = dm.leer(str(drawio))
+    tam = {p["id"]: dm.TAM[p["tipo"]] for p in proc["pasos"]}
+    raiz = ET.parse(drawio).getroot().find("diagram/mxGraphModel/root")
+    externos, ancho = {}, 0
+    for c in raiz.iter("mxCell"):
+        g = c.find("mxGeometry")
+        if "externo=1" in (c.get("style") or ""):
+            externos[c.get("id")] = float(g.get("y", 0))
+        if "swimlane" in (c.get("style") or ""):
+            ancho = max(ancho, float(g.get("width", 0)))
+    out = []
+    for el in raiz:
+        c, texto = (el, el.get("value")) if el.tag == "mxCell" else (el.find("mxCell"), el.get("label"))
+        texto = dm._texto(texto)   # la etiqueta va en una píldora (HTML)
+        if c is None or c.get("edge") != "1" or not texto:
+            continue
+        de, a, g = c.get("source"), c.get("target"), c.find("mxGeometry")
+        estilo = dict(kv.split("=", 1) for kv in (c.get("style") or "").split(";") if "=" in kv)
+        if de in externos or a in externos:
+            paso = a if de in externos else de
+            (cx, cy), (w, h) = geo["pasos"][paso][:2], tam[paso]
+            junto = cx - w / 2 + float(estilo["exitX" if a in externos else "entryX"]) * w, cy + h / 2
+            lejos = float(estilo["entryX" if a in externos else "exitX"]) * ancho, externos[a if a in externos else de]
+            camino = [junto, lejos] if a in externos else [lejos, junto]
+        elif de in geo["pasos"] and a in geo["pasos"]:
+            pts = [(float(q.get("x")), float(q.get("y"))) for q in g.findall("Array/mxPoint")]
+            camino = _camino(geo["pasos"][de][:2], tam[de], pts, geo["pasos"][a][:2], tam[a])
+        else:
+            continue
+        x, y = _punto_a(camino, (float(g.get("x", 0)) + 1) / 2)
+        desvio = g.find("mxPoint[@as='offset']")
+        if desvio is not None:
+            x, y = x + float(desvio.get("x", 0)), y + float(desvio.get("y", 0))
+        w = len(texto) * ANCHO_LETRA_FLUJO + 4
+        out.append((texto, (x - w / 2, y - 7, w, 14)))
+    return out
+
+
+def etiquetas_de_flujo_pisadas(drawio):
+    """Las etiquetas de flujo que pisan a otra, a una forma, a la etiqueta de un evento o una puerta o a una nota."""
+    import drawio_modelo as dm
+    proc, geo, _ = dm.leer(str(drawio))
+    geo = dict(geo, anotaciones=[(cx - w / 2, cy - h / 2, w, h) for cx, cy, w, h in geo.get("anotaciones") or []])
+    cajas = dm._cajas(proc, geo)   # leer da las notas por su centro; _cajas, por su esquina
+    etq = etiquetas_de_flujo(drawio)
+    pisa = lambda a, b: a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3]
+    out = [f"«{t}» / «{u}»" for i, (t, a) in enumerate(etq) for u, b in etq[i + 1:] if pisa(a, b)]
+    return out + [f"«{t}» / la forma o etiqueta en {tuple(round(v) for v in b)}" for t, a in etq for b in cajas if pisa(a, b)]
+
+
+def etiquetas_que_no_se_pisan(tmp, env=None):
+    """Ninguna etiqueta de flujo pisa nada, en todos los procesos de ejemplo: tampoco cinco salidas de una puerta con
+    sus etiquetas ni dos mensajes entre el mismo paso y el mismo participante (etiquetas_flujo.json)."""
+    sin = env is not None
+    mal = []
+    for origen in sorted((AQUI / "datos").glob("*.json")):
+        d = tmp / origen.stem / f"{origen.stem}.drawio"
+        run("crear", origen, "-o", d, esperado=2 if sin else 0, env=env)
+        mal += [f"{origen.stem}: {m}" for m in etiquetas_de_flujo_pisadas(d)]
+    check(not mal, ("sin navegador" if sin else "con Mermaid") + ": ninguna etiqueta de flujo pisa a otra, a una forma, "
+          "a la etiqueta de un evento o una puerta ni a una nota " + "; ".join(mal))
 
 
 # ---------------------------------------------------------------- conexiones falsas
@@ -1052,7 +1134,9 @@ def corredores_ortogonales(tmp):
         proc = proceso_aleatorio(rnd, k)
         if k not in elegidos:
             continue
-        with patch.object(enrutado, "mejorar", lambda p, g, t, c: g):
+        # el dibujo sin mejorar: tampoco con la última pasada, que cambia de lado dos flujos de una forma
+        with patch.object(enrutado, "mejorar", lambda p, g, t, c: g), \
+                patch.object(enrutado, "cambiar_de_lado", lambda p, g, t, c: g):
             base = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA),
                               dm.TAM, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA)
         nuevo = copy.deepcopy(base)
@@ -1075,20 +1159,29 @@ def corredores_ortogonales(tmp):
         if k in (43, 46, 677) and d:
             fallan.append(f"{k}: conserva conexiones falsas")
         if k == 43:
-            # La primera solución libre pasa por y=83. Esta nota ocupa ese
-            # corredor y deja libre la ruta antigua en y=71; el enrutador debe
-            # buscar otra solución o devolverla sin cruzar la nota. El mensaje
-            # al participante externo permanece fuera de la búsqueda.
+            # Una nota sobre el tramo horizontal más largo de la solución sin
+            # ella: el enrutador debe buscar otra o devolver la antigua sin
+            # cruzar la nota. El mensaje al participante externo permanece
+            # fuera de la búsqueda.
+            sin_nota, posiciones_sin, _ = dm.leer(despues)
+            formas = dm._cajas(proc, base)
+            libres = []
+            for fl, camino in _caminos(sin_nota, posiciones_sin):
+                for p, q in zip(camino, camino[1:]):
+                    if abs(p[1] - q[1]) <= 1 and abs(q[0] - p[0]) >= 120:
+                        caja = ((p[0] + q[0]) / 2 - 60, p[1] - 20, 120, 40)
+                        if not any(caja[0] < c[0] + c[2] and caja[0] + caja[2] > c[0] and caja[1] < c[1] + c[3]
+                                   and caja[1] + caja[3] > c[1] for c in formas):
+                            libres.append((abs(q[0] - p[0]), caja))
             con_nota, g_nota = copy.deepcopy(proc), copy.deepcopy(base)
             con_nota["notas"] = [{"paso": "GW-01", "texto": "Nota en el corredor"}]
-            g_nota["anotaciones"] = [(500, 76, 120, 40)]
+            g_nota["anotaciones"] = [max(libres)[1] if libres else (500, 76, 120, 40)]
             con_nota["externos"] = ["Sistema externo"]
             con_nota["flujos"].append({"de": "ACT-04", "a": "Sistema externo", "etiqueta": "Aviso"})
             g_nota["flujos"].append([])
             co.colocar_externos(con_nota, g_nota)
             guardada = copy.deepcopy(g_nota)
             obstaculo = g_nota["anotaciones"][0]
-            sin_nota, posiciones_sin, _ = dm.leer(despues)
             tapa_candidato = any(_cruza(p, q, obstaculo) for fl, camino in _caminos(sin_nota, posiciones_sin)
                                  for p, q in zip(camino, camino[1:]))
             enrutado.mejorar(con_nota, g_nota, dm.TAM, dm.CABECERA)
@@ -1150,7 +1243,32 @@ def bpmn_valido(ruta):
     mal += [f"{i}: {formas.count(i)} BPMNShape" for i in list(nodos) + carriles if formas.count(i) != 1]
     puntos = {e.get("bpmnElement"): len(e.findall("di:waypoint", ns)) for e in b.iter(f"{{{ns['bpmndi']}}}BPMNEdge")}
     mal += [f"{f.get('id')}: sin trazado" for f in flujos if puntos.get(f.get("id"), 0) < 2]
-    return mal
+    return mal + bpmn_contra_esquema(ruta)
+
+
+# El esquema oficial de BPMN 2.0 (OMG, formal/2011-01-03), copiado de resources/bpmn/xsd de bpmn-io/bpmn-moddle
+XSD_BPMN = AQUI / "datos" / "xsd" / "BPMN20.xsd"
+_esquema = []
+
+
+def bpmn_contra_esquema(ruta):
+    """Los errores del BPMN frente al esquema oficial (lo que comprueban Signavio o Camunda al importarlo). Necesita
+    lxml: sin él no se comprueba y lo dice una vez."""
+    try:
+        from lxml import etree
+    except ImportError:
+        if not _esquema:
+            print("AVISO sin lxml: el BPMN no se valida contra el esquema oficial (pip install lxml)")
+            _esquema.append(None)
+        return []
+    if not _esquema:
+        _esquema.append(etree.XMLSchema(etree.parse(str(XSD_BPMN))))
+    esquema = _esquema[0]
+    if esquema is None:
+        return []
+    if esquema.validate(etree.parse(str(ruta))):
+        return []
+    return [f"esquema BPMN, línea {e.line}: {e.message}" for e in list(esquema.error_log)[:5]]
 
 
 def paginas(drawio):
@@ -1385,9 +1503,10 @@ def tramos(tmp, con_png=True):
     pagina_de = {cid: k for k, (_, _, estilos) in enumerate(pags, 1) for cid in estilos}
     t = ET.parse(d).getroot()
     aristas = {(c.get("source"), c.get("target")) for c in t.iter("mxCell") if c.get("edge") == "1"}
-    texto = {(c.get("id") or ""): (c.get("value") or c.get("label") or "") for c in t.iter() if c.tag in ("mxCell", "object")}
+    texto = {(c.get("id") or ""): dm._texto(c.get("value") or c.get("label") or "") for c in t.iter()
+             if c.tag in ("mxCell", "object")}
     for o in t.iter("object"):
-        texto[o.get("id")] = o.get("label") or ""
+        texto[o.get("id")] = dm._texto(o.get("label") or "")
     mal = []
     cruzan = [f for f in proc["flujos"] if f["a"] not in proc["externos"] and pagina_de[f["de"]] != pagina_de[f["a"]]]
     for f in cruzan:
@@ -1455,7 +1574,7 @@ def tramos(tmp, con_png=True):
     g = (celda.find("mxCell") if celda.tag == "object" else celda).find("mxGeometry")
     g.set("y", str(float(g.get("y")) + 10))
     t.write(d, encoding="utf-8")
-    out = run("comparar", d, esperado=1, env=env)
+    out = run("comparar", d, esperado=3, env=env)
     check(f"{celda.get('id')} renombrado: «{viejo}» → «Revisar de nuevo»" in out, "tramos: comparar ve un cambio a mano en el tramo 2")
     run("comparar", d, "--aceptar", esperado=con_imagen, env=env)
     js = json.loads(d.with_suffix(".json").read_text(encoding="utf-8"))
@@ -1466,7 +1585,7 @@ def tramos(tmp, con_png=True):
           "tramos: comparar --aceptar cambia el nombre de la página del tramo de un paso renombrado a mano " + nombres[1])
     (tmp / "t2.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-99", "nombre": "Calcular el coste"}}]},
                                             ensure_ascii=False), encoding="utf-8")
-    out = run("actualizar", d, tmp / "t2.json", esperado=1, env=env)
+    out = run("actualizar", d, tmp / "t2.json", esperado=3, env=env)
     check("tramos" in out and "--recolocar" in out and "Calcular el coste" not in d.read_text(encoding="utf-8"),
           "tramos: actualizar se niega a encajar cambios en tramos colocados a mano y dice cómo seguir")
     run("actualizar", d, tmp / "t2.json", "--recolocar", esperado=con_imagen, env=env)
@@ -1519,6 +1638,117 @@ def finales_conservados(tmp):
         check(not malos, f"finales de línea: actualizar y exportar conservan {salto!r}, también con provisional: {malos}")
 
 
+# ---------------------------------------------------------------- aspecto: tarjetas, adornos y el aspecto de antes
+def tema(tmp):
+    """Las tareas son tarjetas con su pictograma (un adorno hijo de la tarea) y el código en una línea aparte; la página
+    lleva cabecera, los carriles alternan y la vuelta atrás tiene su color. leer() ignora los adornos y devuelve los nombres de siempre; cambiar el tipo cambia el pictograma; y un
+    .drawio del aspecto de antes (con el marcador BPMN) se sigue leyendo igual y pasa al nuevo al recolocarlo."""
+    import drawio_modelo as dm
+    sin = entorno(sin_navegador=True)
+    d = tmp / "abanico" / "abanico.drawio"
+    run("crear", AQUI / "datos" / "abanico.json", "-o", d, esperado=2, env=sin)
+    proc_json = json.loads((AQUI / "datos" / "abanico.json").read_text(encoding="utf-8"))
+    _, cel = celdas(d)
+    tareas = [p for p in proc_json["pasos"] if p["tipo"] in dm.TAREAS]
+    iconos = [cel.get(p["id"] + "-icono") for p in tareas]
+    check(all(i is not None and i.get("parent") == p["id"] and "adorno=1" in i.get("style", "")
+              and "image=data:image/svg+xml," in i.get("style", "") for i, p in zip(iconos, tareas)),
+          "aspecto: cada tarea lleva su pictograma, hijo de la tarea (se mueve con ella)")
+    check(all(f"tipo={p['tipo']};" in cel[p["id"]].get("style", "") for p in tareas), "aspecto: el tipo va en tipo= del estilo")
+    check(any(c.endswith("cabecera") and "adorno=1" in (cel[c].get("style") or "") for c in cel), "aspecto: cabecera con título")
+    root, _ = celdas(d)
+    carriles = [c for c in root if "swimlane" in (c.get("style") or "")]
+    check([c.get("style") for c in carriles] == [dm.estilo_carril(i, c.get("value")) for i, c in enumerate(carriles, 1)]
+          and dm._estilo(dm.estilo_carril(2, "Revisión")).get("fillColor") == "#f8f9fb"
+          and dm._estilo(dm.estilo_carril(1, "Revisión")).get("fillColor") == "#ffffff",
+          "aspecto: los carriles alternan blanco y gris claro")
+    check(dm.CARRIL_SISTEMA.match("Aplicación") and "#f3faf9" in dm.estilo_carril(1, "Aplicación"),
+          "aspecto: el carril de la aplicación, en verde azulado")
+    centro = {"A": (100, 0), "B": (300, 0)}
+    check(dm.es_retorno({"de": "B", "a": "A"}, centro) and not dm.es_retorno({"de": "A", "a": "B"}, centro)
+          and dm.ESTILO_RETORNO in dm.estilo_flujo({"de": "B", "a": "A"}, (), True),
+          "aspecto: un flujo que vuelve a un paso anterior va en el color de vuelta atrás")
+    check("background-color" in dm.etiqueta_paso("tarea", "Revisar [nuevo paso 8]")
+          and "background-color" not in dm.etiqueta_paso("tarea", "Revisar [paso 8]"),
+          "aspecto: el código de un paso nuevo, resaltado")
+    valor = cel["ACT-01"].get("value", "")
+    check('class="codigo"' in valor and "[EJ-01.001]" in valor and "monospace" in valor,
+          "aspecto: el código va arriba a la derecha, en monoespaciada")
+    largo = dm.etiqueta_paso("tarea", "Revisar [EJ-01.001, EJ-01.002]")
+    check('class="codigo"' not in largo and "<br>" in largo and dm._texto(largo) == "Revisar [EJ-01.001, EJ-01.002]",
+          "aspecto: un código que no cabe arriba va en su línea, debajo del nombre")
+    check(dm._texto(dm.etiqueta_flujo("Sí", dm.SECUENCIA)) == "Sí" and "border-radius" in dm.etiqueta_flujo("Sí", dm.SECUENCIA)
+          and dm.etiqueta_flujo("Consulta", None) == "Consulta",
+          "aspecto: la etiqueta de un flujo de secuencia va en una píldora y la de un mensaje, sin ella")
+    proc, _, _ = dm.leer(str(d))
+    check(not dm.comparar(proc_json, proc), "aspecto: leer() ignora los adornos y devuelve los nombres con su código")
+    cambios = tmp / "cambio-tipo.json"
+    cambios.write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-01", "tipo": "manual"}}]}), encoding="utf-8")
+    run("actualizar", d, cambios, esperado=2, env=sin)
+    _, cel = celdas(d)
+    manual = re.search(r"<svg[^>]*>(.*)</svg>", (SCRIPTS.parent / "assets" / "iconos" / "manual.svg").read_text(encoding="utf-8"),
+                       re.S).group(1)
+    hijos = [c for c in cel.values() if c.get("parent") == "ACT-01" and dm.es_adorno(c)]
+    dibujo = (base64.b64decode(re.search(r"image=data:image/svg\+xml,([^;]+);", hijos[0].get("style", "")).group(1)).decode()
+              if len(hijos) == 1 else "")
+    check("tipo=manual;" in cel["ACT-01"].get("style", "") and len(hijos) == 1 and manual in dibujo,
+          "aspecto: cambiar el tipo de una tarea cambia su pictograma (y no deja el anterior)")
+    run("comparar", d, env=sin)
+    # el aspecto de antes
+    viejo = tmp / "viejo"
+    viejo.mkdir()
+    for ext in (".drawio", ".json"):
+        shutil.copy(AQUI / "datos" / ("tema-anterior" + ext), viejo / ("tema-anterior" + ext))
+    v = viejo / "tema-anterior.drawio"
+    base = json.loads((viejo / "tema-anterior.json").read_text(encoding="utf-8"))
+    proc, _, _ = dm.leer(str(v))
+    check(not dm.comparar(base, proc), "aspecto de antes: un .drawio con el marcador BPMN se lee igual")
+    run("comparar", v, env=sin)
+    cambios.write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-01", "nombre": "Registrar la solicitud"}}]}), encoding="utf-8")
+    run("actualizar", v, cambios, esperado=2, env=sin)
+    _, cel = celdas(v)
+    tareas = [p["id"] for p in base["pasos"] if p["tipo"] in dm.TAREAS]
+    check(all("tipo=" in cel[t].get("style", "") and (t + "-icono") in cel and dm.ASPECTO in cel[t + "-icono"].get("style", "")
+              for t in tareas), "aspecto de antes: al recolocarlo pasa al aspecto nuevo")
+
+
+def cruces(drawio):
+    """Pares de flujos de una página cuyos tramos se cruzan (en perpendicular, por dentro de los dos tramos)."""
+    import drawio_modelo as dm
+    proc, geo, _ = dm.leer(str(drawio))
+    caminos = _caminos(proc, geo)
+    out = []
+    for i, (f1, c1) in enumerate(caminos):
+        for f2, c2 in caminos[i + 1:]:
+            for p, q in zip(c1, c1[1:]):
+                for r, s in zip(c2, c2[1:]):
+                    h, v = ((p, q), (r, s)) if abs(p[1] - q[1]) <= 1 else ((r, s), (p, q))
+                    if abs(h[0][1] - h[1][1]) > 1 or abs(v[0][0] - v[1][0]) > 1:
+                        continue
+                    if (min(h[0][0], h[1][0]) + 1 < v[0][0] < max(h[0][0], h[1][0]) - 1
+                            and min(v[0][1], v[1][1]) + 1 < h[0][1] < max(v[0][1], v[1][1]) - 1):
+                        out.append(f"{f1['de']} → {f1['a']} cruza {f2['de']} → {f2['a']}")
+    return sorted(set(out))
+
+
+def abanico(tmp, env=None):
+    """Las salidas de una puerta hacia pasos de su fila que tienen otro paso en medio van en abanico: ninguna se cruza con
+    otra ni pasa por una forma o por el texto de otro objeto, y cada una va por un pasillo más lejos cuanto más lejos está
+    su destino."""
+    import drawio_modelo as dm
+    d = tmp / "abanico.drawio"
+    run("crear", AQUI / "datos" / "abanico.json", "-o", d, *(() if env else ("--colocacion", "mermaid")),
+        esperado=2 if env else 0, env=env)
+    modo = "sin navegador" if env else "Mermaid"
+    mal = conexiones_falsas(d) + solapes(d) + cruces(d)
+    check(not mal, f"abanico ({modo}): las salidas de la puerta no se cruzan ni pisan nada " + "; ".join(mal[:6]))
+    if not env:
+        proc, geo, _ = dm.leer(str(d))
+        pasillos = [pts[0][1] for fl, pts in zip(proc["flujos"], geo["flujos"]) if fl["de"] == "GW-01" and len(pts) == 2]
+        check(len(pasillos) == 4 and pasillos == sorted(pasillos) and len(set(pasillos)) == 4,
+              f"abanico (Mermaid): un pasillo por salida, cada vez más lejos ({pasillos})")
+
+
 def g3(tmp):
     """Lo de la 0.7.0-beta.2 (G3) que no necesita navegador: la nota y la etiqueta de su puerta, el .drawio.tmp, el error
     suelto, la holgura de las etiquetas y las filas por capas, el temporizador que interrumpe, los avisos y el fichero de
@@ -1531,6 +1761,486 @@ def g3(tmp):
         prueba(tmp / nombre)
 
 
+def estructura():
+    """Avisos de estilo de validar: una tarea con varias salidas sin puerta (en BPMN se siguen todas), una puerta que une
+    y divide, una exclusiva sin pregunta, caminos que se cierran con una puerta de otro tipo y dos tareas con el mismo
+    nombre. Un proceso bien hecho, con una vuelta atrás y una paralela cerrada con otra, no da ninguno."""
+    import drawio_modelo as dm
+    def paso(i, t, n=""):
+        return {"id": i, "tipo": t, "carril": "A", "nombre": n}
+    bueno = {"proceso": "x", "carriles": ["A"],
+             "pasos": [paso("EV-01", "inicio", "Solicitud recibida"), paso("ACT-01", "tarea", "Registrar la solicitud"),
+                       paso("GW-01", "exclusiva"), paso("ACT-02", "tarea", "Revisar la solicitud"),
+                       paso("GW-02", "exclusiva", "¿Completa?"), paso("GW-03", "paralela"),
+                       paso("ACT-03", "sistema", "Avisar al registro"), paso("ACT-04", "tarea", "Archivar la copia"),
+                       paso("GW-04", "paralela"), paso("EV-02", "fin", "Solicitud resuelta")],
+             "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "GW-01"}, {"de": "GW-01", "a": "ACT-02"},
+                        {"de": "ACT-02", "a": "GW-02"}, {"de": "GW-02", "a": "GW-01", "etiqueta": "No"},
+                        {"de": "GW-02", "a": "GW-03", "etiqueta": "Sí"}, {"de": "GW-03", "a": "ACT-03"},
+                        {"de": "GW-03", "a": "ACT-04"}, {"de": "ACT-03", "a": "GW-04"}, {"de": "ACT-04", "a": "GW-04"},
+                        {"de": "GW-04", "a": "EV-02"}]}
+    err, av = dm.validar(bueno)
+    check(not err and not av, f"validar: un proceso bien estructurado no da avisos de estilo ({av})")
+    malo = json.loads(json.dumps(bueno))
+    pasos = {p["id"]: p for p in malo["pasos"]}
+    pasos["GW-02"]["nombre"] = "Completa"                          # sin pregunta
+    pasos["GW-04"]["tipo"] = "exclusiva"                           # paralela cerrada con exclusiva
+    pasos["ACT-04"]["nombre"] = "Revisar la solicitud [EJ-01.002]"  # nombre repetido: el código del cliente no cuenta
+    malo["flujos"] = [f for f in malo["flujos"] if f["de"] != "ACT-01"] + [
+        {"de": "ACT-01", "a": "GW-01"}, {"de": "ACT-01", "a": "EV-02", "etiqueta": "Duplicada"}]   # tarea con dos salidas
+    malo["flujos"] = [f for f in malo["flujos"] if f["de"] != "EV-01"] + [{"de": "EV-01", "a": "GW-01"}]
+    malo["flujos"].append({"de": "GW-01", "a": "EV-02", "etiqueta": "Urgente"})                  # GW-01 une y divide
+    _, av = dm.validar(malo)
+    texto = "\n".join(av)
+    check("ACT-01 (Registrar la solicitud) tiene 2 salidas sin puerta" in texto and "GW-01: une y divide" in texto
+          and "GW-02 (Completa): una puerta que divide lleva una pregunta" in texto
+          and "los caminos que abre GW-03 (paralela) se juntan en GW-04" in texto
+          and "ACT-02, ACT-04 se llaman igual" in texto,
+          "validar: avisa de tarea con varias salidas, puerta que une y divide, exclusiva sin pregunta, paralela "
+          f"cerrada con otra puerta y nombres repetidos ({av})")
+    bloqueo = json.loads(json.dumps(bueno))
+    {p["id"]: p for p in bloqueo["pasos"]}["GW-03"]["tipo"] = "exclusiva"
+    {p["id"]: p for p in bloqueo["pasos"]}["GW-03"]["nombre"] = "¿Urgente?"
+    for f in bloqueo["flujos"]:
+        if f["de"] == "GW-03":
+            f["etiqueta"] = "Sí" if f["a"] == "ACT-03" else "No"
+    _, av = dm.validar(bloqueo)
+    check(any("GW-03 (exclusiva) se juntan en GW-04, una puerta paralela" in a for a in av),
+          f"validar: avisa de una exclusiva cerrada con una paralela, que bloquea el proceso ({av})")
+    notas = json.loads(json.dumps(bueno))
+    notas["notas"] = [{"paso": "ACT-01", "texto": "Corta: la hace cualquiera del grupo"},
+                      {"paso": "ACT-02", "texto": "Larga " + "con mucho detalle de la fuente " * 6}]
+    _, av = dm.validar(notas)
+    check(len(av) == 1 and av[0].startswith("ACT-02: la nota tiene"),
+          f"validar: avisa de una nota de más de {dm.NOTA_LARGA} caracteres y no de una corta ({av})")
+    sin_nombre = json.loads(json.dumps(bueno))                     # la puerta que solo une no lleva el campo nombre
+    del {p["id"]: p for p in sin_nombre["pasos"]}["GW-04"]["nombre"]
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="diagramas-estructura-"))
+    try:
+        (tmp / "union.json").write_text(json.dumps(sin_nombre, ensure_ascii=False), encoding="utf-8")
+        run("crear", tmp / "union.json", "-o", tmp / "d", esperado=2, env=entorno(sin_navegador=True))
+        check((tmp / "d" / "union.json").is_file(), "crear: una puerta sin el campo nombre no rompe el JSON del proceso")
+        salida = run("actualizar", tmp / "d" / "union.drawio", tmp / "union.json", esperado=2,   # el proceso entero
+                     env=entorno(sin_navegador=True))
+        check("Traceback" not in salida, "actualizar: el proceso entero con una puerta sin el campo nombre no rompe al comparar")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def leyenda():
+    """La leyenda de la cabecera dice solo lo que sale en el diagrama: un proceso con una tarea de usuario no explica
+    la de sistema, y uno con un aviso, un plazo, un supuesto y una nota los explica."""
+    import drawio_modelo as dm
+    simple = {"proceso": "x", "carriles": ["A"], "flujos": [],
+              "pasos": [{"id": "EV-01", "tipo": "inicio"}, {"id": "ACT-01", "tipo": "tarea"}, {"id": "EV-02", "tipo": "fin"}]}
+    textos = [t for _, t in dm.claves_leyenda(simple)]
+    check(textos == ["secuencia", "tarea de usuario", "inicio", "fin"], f"leyenda: solo lo que sale ({textos})")
+    completo = json.loads(json.dumps(simple))
+    completo["pasos"] += [{"id": "ACT-02", "tipo": "sistema", "supuesto": "nadie lo dice"},
+                          {"id": "GW-01", "tipo": "exclusiva"}, {"id": "EV-03", "tipo": "mensaje"},
+                          {"id": "EV-04", "tipo": "temporizador"}, {"id": "EV-05", "tipo": "error"}]
+    completo["externos"] = ["ERP"]
+    completo["flujos"] = [{"de": "ACT-02", "a": "ERP"}]
+    completo["notas"] = [{"paso": "ACT-01", "texto": "x"}]
+    textos = [t for _, t in dm.claves_leyenda(completo, retornos=True)]
+    check(textos == ["secuencia", "vuelta atrás", "mensaje con un externo", "tarea de usuario", "tarea de sistema",
+                     "decisión", "inicio", "fin", "aviso o correo", "plazo o espera", "error", "supuesto por confirmar",
+                     "nota"], f"leyenda: explica aviso, plazo, error, supuesto y nota cuando salen ({textos})")
+
+
+def carriles_ajustados():
+    """Un carril con hueco vacío debajo (el que reserva el motor y no usa nada) se queda con el alto que usa: lo de
+    debajo sube lo mismo, cada paso sigue en su carril y no cambian los cruces."""
+    import drawio_modelo as dm, colocacion as co
+    proc = json.loads(EJEMPLO.read_text(encoding="utf-8"))
+    geo = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM, dm.FORMAS_EVENTO,
+                     dm.PUERTAS, dm.CABECERA)
+    antes = {c: v for c, v in geo["carriles"].items()}
+    cruces = co.cruces(proc, geo)
+    primero, (y0, h0) = min(geo["carriles"].items(), key=lambda kv: kv[1][0])
+    corte = y0 + h0
+    mover = lambda y: y + 200 if y >= corte else y                   # noqa: E731
+    geo["carriles"] = {c: (y, h + 200) if c == primero else (mover(y), h) for c, (y, h) in geo["carriles"].items()}
+    geo["pasos"] = {p: (v[0], mover(v[1]), *v[2:]) for p, v in geo["pasos"].items()}
+    geo["flujos"] = [[(x, mover(y)) for x, y in pts] for pts in geo["flujos"]]
+    geo["anotaciones"] = [(x, mover(y), w, h) for x, y, w, h in geo.get("anotaciones") or []]
+    quitado = co.compactar_carriles(proc, geo, dm.TAM, dm.FORMAS_EVENTO, dm.PUERTAS)
+    carril = {p["id"]: p["carril"] for p in proc["pasos"]}
+    dentro = all(geo["carriles"][carril[p]][0] < v[1] < sum(geo["carriles"][carril[p]]) for p, v in geo["pasos"].items())
+    check(quitado >= 200 - co.SOBRA_CARRIL and all(abs(geo["carriles"][c][1] - antes[c][1]) <= 1 for c in antes if c != primero)
+          and geo["carriles"][primero][1] <= antes[primero][1] + co.SOBRA_CARRIL and dentro and co.cruces(proc, geo) == cruces,
+          f"carriles: se quita el hueco vacío de un carril y lo de debajo sube ({quitado:.0f} px)")
+
+
+def retrocesos():
+    """Un flujo no va a un lado y, tras un quiebro corto, vuelve hacia el contrario (a la izquierda y luego a la
+    derecha): el tramo anterior se alarga, más allá si así no va pegado a otro flujo, y nunca por encima de una caja.
+    En 120 procesos al azar colocados por capas quedan como mucho 3 (eran 6), las que no se pueden enderezar. Una tarea
+    que pasa el trabajo a otra del carril de al lado va en su columna."""
+    import random
+    import colocacion as co, drawio_modelo as dm, enrutado as en
+    zigzag = [(0, 0), (100, 0), (100, 300), (20, 300), (20, 306), (260, 306), (260, 260), (300, 260)]
+    check(en.sin_retrocesos(zigzag, []) == [(0, 0), (100, 0), (100, 306), (260, 306), (260, 260), (300, 260)],
+          "retrocesos: a la izquierda y luego a la derecha pasa a ser un solo tramo hacia la derecha")
+    pegado = en.sin_retrocesos(zigzag, [], [((40, 303), (140, 303))])
+    check(pegado[2][1] - 303 >= en.HUECO, f"retrocesos: el tramo nuevo no va pegado a otro flujo ({pegado})")
+    check(en.sin_retrocesos(zigzag, [(150, 280, 40, 120)]) == zigzag,
+          "retrocesos: si el tramo nuevo pasaría por una caja, el camino se queda como estaba")
+    vuelta = [(0, 0), (100, 0), (100, 300), (20, 300), (20, 400), (260, 400)]
+    check(en.sin_retrocesos(vuelta, []) == vuelta, "retrocesos: una vuelta larga, que rodea algo, no se toca")
+
+    def cortos(proc, geo):
+        out = []
+        for f, ps in zip(proc["flujos"], geo["flujos"]):
+            if f.get("etiqueta"):
+                continue
+            for a, b, c, d in zip(ps, ps[1:], ps[2:], ps[3:]):
+                for e in (0, 1):
+                    g = 1 - e
+                    if (a[g] == b[g] and c[g] == d[g] and b[e] == c[e] and abs(c[g] - b[g]) < en.RETROCESO
+                            and (b[e] - a[e]) * (d[e] - c[e]) < 0):
+                        out.append(f"{f['de']} → {f['a']}")
+        return out
+    relevo = {"proceso": "x", "carriles": ["A", "B"],
+              "pasos": [{"id": "EV-01", "tipo": "inicio", "carril": "A", "nombre": "Inicio"},
+                        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Adjuntar el informe"},
+                        {"id": "ACT-02", "tipo": "tarea", "carril": "B", "nombre": "Validar el informe"},
+                        {"id": "GW-01", "tipo": "exclusiva", "carril": "B", "nombre": "¿Válido?"},
+                        {"id": "EV-02", "tipo": "fin", "carril": "B", "nombre": "Informe validado"}],
+              "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "ACT-02"}, {"de": "ACT-02", "a": "GW-01"},
+                         {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"}, {"de": "GW-01", "a": "ACT-01", "etiqueta": "No"}]}
+    capa, _ = co.capas(relevo)
+    geo = co.ajustar(relevo, co.por_capas(relevo, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM, dm.FORMAS_EVENTO,
+                     dm.PUERTAS, dm.CABECERA)
+    check(capa["ACT-01"] == capa["ACT-02"] and abs(geo["pasos"]["ACT-01"][0] - geo["pasos"]["ACT-02"][0]) < 1
+          and all(abs(x - geo["pasos"]["ACT-01"][0]) < 1 for x, _ in geo["flujos"][1]),
+          "relevo: una tarea que pasa el trabajo a otra del carril de al lado va en su columna y el flujo baja recto "
+          f"({capa}, {geo['flujos'][1]})")
+    from unittest.mock import patch
+    cambiar, cruces = en.cambiar_de_lado, []
+
+    def medido(p, g, t, c):
+        antes = co.cruces(p, g)
+        cambiar(p, g, t, c)
+        cruces.append((antes, co.cruces(p, g)))
+        return g
+    rnd, mal = random.Random(5), []
+    with patch.object(en, "cambiar_de_lado", medido):
+        for k in range(120):
+            proc = proceso_aleatorio(rnd, k)
+            geo = co.ajustar(proc, co.por_capas(proc, dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA), dm.TAM,
+                             dm.FORMAS_EVENTO, dm.PUERTAS, dm.CABECERA)
+            mal += [f"proceso {k}: {m}" for m in cortos(proc, geo)]
+    # sin esta pasada quedaban 6; las 3 que quedan, el tramo recto pasaría por una forma o pegado a otro flujo
+    check(len(mal) <= 3, f"120 procesos al azar: como mucho 3 vueltas atrás cortas ({len(mal)}) " + "; ".join(mal[:4]))
+    peor = [k for k, (a, d) in enumerate(cruces) if d > a]
+    menos = sum(a - d for a, d in cruces)
+    check(not peor and menos > 0, "120 procesos al azar: cambiar de lado dos flujos de una forma que se cruzan quita "
+          f"cruces ({menos}) y nunca añade ({peor[:4]})")
+
+
+def letra_de_tareas():
+    """El nombre largo de una tarea cabe en la tarjeta con la letra algo más pequeña; uno corto conserva los 11 px."""
+    import drawio_modelo as dm
+    corto = {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar solicitud"}
+    largo = dict(corto, nombre="Revisar la solicitud y preparar el informe con fecha límite (nuevo paso 5)")
+    check("fontSize=11;" in dm.estilo_paso(corto) and "fontSize=10;" in dm.estilo_paso(largo),
+          "tareas: un nombre largo va con letra de 10 px para caber en la tarjeta; uno corto, con la de 11")
+
+
+def mover_paso():
+    """Con Mermaid, un paso que tapa la columna por la que baja otro flujo se mueve dentro de su carril si así ese flujo
+    no cruza ninguno; por capas no se mueve nada. Caso ficticio: un aviso justo debajo de la tarea a la que llega, con
+    la tarea siguiente debajo del aviso y sin sitio a la derecha para rodearlo."""
+    import copy
+    import drawio_modelo as dm, enrutado
+    proc = {"proceso": "x", "carriles": ["Uno", "Dos", "Tres"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "Uno", "nombre": "Revisar"},
+        {"id": "ACT-02", "tipo": "tarea", "carril": "Dos", "nombre": "Adjuntar"},
+        {"id": "EV-01", "tipo": "mensaje", "carril": "Dos", "nombre": "Aviso"},
+        {"id": "ACT-03", "tipo": "tarea", "carril": "Tres", "nombre": "Preparar"}],
+        "flujos": [{"de": "ACT-02", "a": "EV-01"}, {"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "ACT-03"}]}
+    geo = {"carriles": {"Uno": (0, 200), "Dos": (200, 200), "Tres": (400, 200)}, "ancho": 570,
+           "pasos": {"ACT-01": (500, 100), "ACT-02": (dm.CABECERA + 100, 300), "EV-01": (500, 300), "ACT-03": (500, 500)},
+           "flujos": [[], [], []], "etiquetas": {"EV-01": "abajo"}, "anotaciones": [], "trazado_generado": True}
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+
+    def cruces_de(g):
+        c, cajas, alto = enrutado._obstaculos(proc, g, dm.TAM)
+        caminos = {i: dm._camino(c[f["de"]], dm.TAM[tipo[f["de"]]], g["flujos"][i], c[f["a"]], dm.TAM[tipo[f["a"]]])
+                   for i, f in enumerate(proc["flujos"])}
+        return sum(enrutado._cruces_de_caminos(caminos).values())
+    c, cajas, alto = enrutado._obstaculos(proc, geo, dm.TAM)
+    antes = dict(geo, flujos=enrutado.trazar_todo(proc, dict(geo, pasos=c), dm.TAM, dm.CABECERA, alto, cajas, [0, 1, 2],
+                                                   hueco=enrutado.HUECO)[0])
+    movido = copy.deepcopy(geo)
+    enrutado.mover_pasos(proc, movido, dm.TAM, dm.CABECERA)
+    check(cruces_de(antes) == 1 and cruces_de(movido) == 0 and movido["pasos"]["EV-01"][0] < 500
+          and movido["pasos"]["EV-01"][1] == 300 and movido["pasos"]["ACT-01"] == geo["pasos"]["ACT-01"],
+          f"mover un paso: el aviso deja libre la columna y ya no se cruza nada ({movido['pasos']['EV-01']})")
+    capas = copy.deepcopy(geo)
+    capas.pop("trazado_generado")
+    enrutado.mover_pasos(proc, capas, dm.TAM, dm.CABECERA)
+    check(capas["pasos"] == geo["pasos"] and capas["flujos"] == geo["flujos"], "mover un paso: por capas no se mueve nada")
+
+
+def nota_y_mensaje_apartados():
+    """Una nota que pisa la línea de un flujo (o va pegada a ella) se corre hasta que quede libre, sin dejar de estar
+    sobre su paso, y un mensaje no baja por encima de la etiqueta de un flujo. Casos ficticios."""
+    import drawio_modelo as dm
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
+        {"id": "ACT-02", "tipo": "tarea", "carril": "A", "nombre": "Preparar"},
+        {"id": "ACT-03", "tipo": "tarea", "carril": "A", "nombre": "Enviar"}],
+        "flujos": [{"de": "ACT-02", "a": "ACT-03"}], "notas": [{"paso": "ACT-01", "texto": "Supuesto"}]}
+    geo = {"carriles": {"A": (0, 600)}, "ancho": 900, "pasos": {"ACT-01": (300, 250), "ACT-02": (460, 450),
+           "ACT-03": (700, 60)}, "flujos": [[(460, 60)]], "anotaciones": [(300, 120, 160, 50)]}
+    dm._apartar_notas(proc, geo)
+    x, _, w, _ = geo["anotaciones"][0]
+    check((x + w <= 460 - dm.AIRE_NOTA or x >= 460 + dm.AIRE_NOTA) and x < 300 + 60 and x + w > 300 - 60,
+          f"nota: se aparta de la línea que bajaba por su borde y sigue sobre su paso ({x}, {x + w})")
+    # entre dos líneas más juntas que su ancho y con la llegada a su paso justo debajo: más estrecha y un poco más arriba
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": f"ACT-0{i}", "tipo": "tarea", "carril": "A", "nombre": n} for i, n in enumerate(
+            ("Clasificar", "Revisar", "Generar", "Archivar"), 1)],
+        "flujos": [{"de": "ACT-02", "a": "ACT-01"}, {"de": "ACT-03", "a": "ACT-04"}],
+        "notas": [{"paso": "ACT-01", "texto": "Un correo por cada destinatario con todas sus líneas marcadas"}]}
+    geo = {"carriles": {"A": (0, 700)}, "ancho": 900, "pasos": {"ACT-01": (300, 330), "ACT-02": (500, 60),
+           "ACT-03": (220, 640), "ACT-04": (220, 60)}, "flujos": [[(380, 60), (380, 270), (300, 270)], []],
+           "anotaciones": [(220, 203, 160, 63)]}
+    dm._apartar_notas(proc, geo)
+    x, y, w, h = geo["anotaciones"][0]
+    check(x >= 220 + dm.AIRE_NOTA and x + w <= 380 - dm.AIRE_NOTA and y + h <= 270 - dm.AIRE_NOTA and y >= 30,
+          f"nota: entre dos líneas más juntas que ella se estrecha y se separa de la que llega a su paso ({x}, {y}, {w}, {h})")
+    proc = {"proceso": "x", "carriles": ["A"], "externos": ["E"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Publicar"},
+        {"id": "ACT-02", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
+        {"id": "EV-01", "tipo": "fin", "carril": "A", "nombre": ""}],
+        "flujos": [{"de": "ACT-02", "a": "EV-01", "etiqueta": "No, rechaza"}, {"de": "ACT-01", "a": "E"}]}
+    geo = {"carriles": {"A": (0, 400)}, "ancho": 900, "externos": {"E": (460, 60)},
+           "pasos": {"ACT-01": (300, 100), "ACT-02": (100, 300), "EV-01": (520, 300)}, "flujos": [[], []]}
+    w = dm.colocacion.ancho_etiqueta_flujo("No, rechaza")
+    etiqueta = (300 - w / 2, 300 - dm.ALTO_ETIQUETA_FLUJO / 2, w, dm.ALTO_ETIQUETA_FLUJO)
+    centro = {k: v[:2] for k, v in geo["pasos"].items()}
+
+    def vertical(etiquetas):
+        sitio, pts = dm._vertical_mensaje(proc["flujos"][1], centro, dm.TAM["tarea"], geo, {"E": "externo-1"}, 0.5,
+                                          proc, [], etiquetas)
+        return pts[-1][0] if pts else 300 + (sitio - 0.5) * dm.TAM["tarea"][0]
+    sin, con = vertical([]), vertical([etiqueta])
+    check(etiqueta[0] < sin < etiqueta[0] + w and not etiqueta[0] - 12 < con < etiqueta[0] + w + 12,
+          f"mensaje: baja por fuera de la etiqueta de otro flujo ({sin} → {con})")
+
+
+def borde_y_recto():
+    """La línea discontinua a un plazo sale por arriba o por abajo de su tarea y no comparte el lado derecho con la
+    salida de la tarea, y un flujo entre dos pasos a la misma altura sin nada en medio va recto. Casos ficticios."""
+    import drawio_modelo as dm, enrutado
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
+        {"id": "EV-01", "tipo": "temporizador", "carril": "A", "nombre": "10 días"},
+        {"id": "ACT-02", "tipo": "sistema", "carril": "A", "nombre": "Cerrar"}],
+        "flujos": [{"de": "ACT-01", "a": "EV-01", "discontinuo": True}, {"de": "ACT-01", "a": "ACT-02"}]}
+    geo = {"carriles": {"A": (0, 400)}, "ancho": 800, "anotaciones": [], "etiquetas": {"EV-01": "abajo"},
+           "pasos": {"ACT-01": (dm.CABECERA + 100, 200), "EV-01": (dm.CABECERA + 300, 200), "ACT-02": (dm.CABECERA + 300, 340)},
+           "flujos": [[], []]}
+    c, cajas, alto = enrutado._obstaculos(proc, geo, dm.TAM)
+    rutas = enrutado.trazar_todo(proc, dict(geo, pasos=c), dm.TAM, dm.CABECERA, alto, cajas, [0, 1], hueco=enrutado.HUECO)[0]
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    ini = [dm._camino(c[f["de"]], dm.TAM[tipo[f["de"]]], rutas[i], c[f["a"]], dm.TAM[tipo[f["a"]]])[0]
+           for i, f in enumerate(proc["flujos"])]
+    check(ini[0] != ini[1] and abs(ini[0][0] - c["ACT-01"][0]) <= 1,
+          f"borde: la línea al plazo sale por arriba o por abajo de la tarea, no por el lado de su salida ({ini})")
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": "EV-01", "tipo": "mensaje", "carril": "A", "nombre": "Aviso"},
+        {"id": "EV-02", "tipo": "fin", "carril": "A", "nombre": "Fin"}], "flujos": [{"de": "EV-01", "a": "EV-02"}]}
+    geo = {"carriles": {"A": (0, 300)}, "ancho": 700, "anotaciones": [], "etiquetas": {"EV-01": "abajo", "EV-02": "abajo"},
+           "pasos": {"EV-01": (300, 150), "EV-02": (500, 150)}, "flujos": [[(340, 150), (340, 110), (500, 110)]]}
+    enrutado.enderezar(proc, geo, dm.TAM)
+    recto = geo["flujos"][0]
+    geo["pasos"]["ACT-09"] = (400, 150)
+    proc["pasos"].append({"id": "ACT-09", "tipo": "tarea", "carril": "A", "nombre": "En medio"})
+    geo["flujos"][0] = [(340, 150), (340, 60), (500, 60)]
+    enrutado.enderezar(proc, geo, dm.TAM)
+    check(all(y == 150 for _, y in recto) and geo["flujos"][0] == [(340, 150), (340, 60), (500, 60)],
+          f"recto: sin nada en medio el rodeo se quita ({recto}); con una forma en medio, se queda")
+
+
+def columna_lado_y_mensaje():
+    """Un flujo a la caja de debajo baja recto aunque una vuelta atrás cruce su columna; una salida que cruza otro
+    flujo se traza de nuevo por un lado que no lo cruce; y un mensaje no entra por el punto por el que sale un flujo.
+    Casos ficticios."""
+    import drawio_modelo as dm, enrutado
+    cab = dm.CABECERA
+    # columna: ACT-01 encima de ACT-02, en otro carril; la vuelta de ACT-03 a EV-01 cruza la columna por en medio
+    proc = {"proceso": "x", "carriles": ["A", "B"], "pasos": [
+        {"id": "EV-01", "tipo": "inicio", "carril": "A", "nombre": "Inicio"},
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Registrar"},
+        {"id": "ACT-02", "tipo": "script", "carril": "B", "nombre": "Validar"},
+        {"id": "ACT-03", "tipo": "tarea", "carril": "B", "nombre": "Revisar"}],
+        "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "ACT-02"}, {"de": "ACT-02", "a": "ACT-03"},
+                   {"de": "ACT-03", "a": "EV-01"}]}
+    geo = {"carriles": {"A": (0, 300), "B": (300, 300)}, "ancho": 900, "anotaciones": [], "etiquetas": {"EV-01": "abajo"},
+           "etiqueta_en_horizontal": True,
+           "pasos": {"EV-01": (cab + 80, 150), "ACT-01": (cab + 300, 150), "ACT-02": (cab + 300, 450), "ACT-03": (cab + 520, 450)},
+           "flujos": [[], [(cab + 300, 88), (cab + 200, 88), (cab + 200, 450)], [],
+                      [(cab + 520, 300), (cab + 80, 300)]]}
+    enrutado.columnas_rectas(proc, geo, dm.TAM, cab)
+    c, _, _ = enrutado._obstaculos(proc, geo, dm.TAM)
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    caminos = {i: dm._camino(c[f["de"]], dm.TAM[tipo[f["de"]]], geo["flujos"][i], c[f["a"]], dm.TAM[tipo[f["a"]]])
+               for i, f in enumerate(proc["flujos"])}
+    recto = enrutado._limpiar(caminos[1])
+    check(len(recto) == 2 and recto[0][0] == recto[1][0] and not enrutado._cruces_de_caminos(caminos),
+          f"columna: baja recto a la caja de debajo y la vuelta atrás rodea sin cruzarlo ({recto}, {geo['flujos'][3]})")
+    # lado libre: el «Sí» de la puerta vuelve a ACT-00 por abajo y cruza la salida de ACT-01 hacia EV-09
+    proc = {"proceso": "x", "carriles": ["A"], "pasos": [
+        {"id": "ACT-00", "tipo": "tarea", "carril": "A", "nombre": "Preparar"},
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar"},
+        {"id": "GW-01", "tipo": "exclusiva", "carril": "A", "nombre": "¿Correcto?"},
+        {"id": "ACT-02", "tipo": "tarea", "carril": "A", "nombre": "Cerrar"},
+        {"id": "EV-09", "tipo": "fin", "carril": "A", "nombre": "Anulado"}],
+        "flujos": [{"de": "ACT-00", "a": "ACT-01"}, {"de": "ACT-01", "a": "GW-01"},
+                   {"de": "GW-01", "a": "ACT-02", "etiqueta": "No"}, {"de": "GW-01", "a": "ACT-00", "etiqueta": "Sí"},
+                   {"de": "ACT-01", "a": "EV-09"}]}
+    geo = {"carriles": {"A": (0, 560)}, "ancho": 1000, "anotaciones": [], "etiqueta_en_horizontal": True,
+           "etiquetas": {"GW-01": "arriba", "EV-09": "abajo"},
+           "pasos": {"ACT-00": (cab + 120, 150), "ACT-01": (cab + 320, 300), "GW-01": (cab + 520, 300),
+                     "ACT-02": (cab + 720, 300), "EV-09": (cab + 320, 470)},
+           "flujos": [[(cab + 320, 150)], [], [], [(cab + 520, 400), (cab + 40, 400), (cab + 40, 150)], []]}
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+
+    def cruces():
+        c, _, _ = enrutado._obstaculos(proc, geo, dm.TAM)
+        return sum(enrutado._cruces_de_caminos({i: dm._camino(c[f["de"]], dm.TAM[tipo[f["de"]]], geo["flujos"][i],
+                                                              c[f["a"]], dm.TAM[tipo[f["a"]]])
+                                                for i, f in enumerate(proc["flujos"])}).values())
+    antes = cruces()
+    enrutado.salir_por_lado_libre(proc, geo, dm.TAM, cab)
+    check(antes == 1 and cruces() == 0, f"lado libre: la vuelta atrás de la puerta deja de cruzar ({antes} → {cruces()})")
+    # mensaje: entra en ACT-01 por abajo, pero ACT-02 está justo debajo y el flujo a ella sale por el centro
+    proc = {"proceso": "x", "carriles": ["A", "B"], "externos": ["E"], "pasos": [
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Registrar"},
+        {"id": "ACT-02", "tipo": "script", "carril": "B", "nombre": "Validar"}],
+        "flujos": [{"de": "ACT-01", "a": "ACT-02"}, {"de": "E", "a": "ACT-01"}]}
+    geo = {"carriles": {"A": (0, 300), "B": (300, 300)}, "ancho": 900, "externos": {"E": (640, 60)},
+           "pasos": {"ACT-01": (300, 150), "ACT-02": (300, 450)}, "flujos": [[], []]}
+    centro = {k: v[:2] for k, v in geo["pasos"].items()}
+    camino = [(300, 198), (300, 402)]
+    sitio, pts = dm._vertical_mensaje(proc["flujos"][1], centro, dm.TAM["tarea"], geo, {"E": "externo-1"}, 0.5,
+                                      proc, [camino], [])
+    x0 = 300 + (sitio - 0.5) * dm.TAM["tarea"][0]
+    check(pts and abs(x0 - 300) >= 12 and (x0 - 300) * (pts[-1][0] - 300) > 0,
+          f"mensaje: entra lejos de la salida del flujo y del lado por el que baja ({sitio}, {pts})")
+
+
+def ordenes_nuevas(tmp, env=None):
+    """Supuestos, pestañas por fase, importar un Visio o un BPMN, comparar con una referencia, la colocación que se
+    fuerza y los flujos pegados que se separan."""
+    import drawio_modelo as dm, enrutado as en
+    sys.path.insert(0, str(AQUI))
+    import visio_ficticio
+    tmp.mkdir(parents=True, exist_ok=True)
+    png = 2 if env else 0
+    # supuestos
+    proc = {"proceso": "Prueba", "carriles": ["A", "B"], "pasos": [
+        {"id": "EV-01", "tipo": "inicio", "carril": "A", "nombre": "Recibida"},
+        {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": "Revisar solicitud", "supuesto": "El carril no lo dice ninguna fuente"},
+        {"id": "GW-01", "tipo": "exclusiva", "carril": "B", "nombre": "¿Completa?"},
+        {"id": "EV-02", "tipo": "fin", "carril": "B", "nombre": "Aprobada"}, {"id": "EV-03", "tipo": "fin", "carril": "B", "nombre": "Devuelta"}],
+        "flujos": [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "GW-01"}, {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"},
+                   {"de": "GW-01", "a": "EV-03", "etiqueta": "No"}]}
+    (tmp / "sup.json").write_text(json.dumps(proc, ensure_ascii=False), encoding="utf-8")
+    out = run("crear", tmp / "sup.json", "-o", tmp / "sup.drawio", "--colocacion", "capas", esperado=png, env=env)
+    xml = (tmp / "sup.drawio").read_text(encoding="utf-8")
+    leido = json.loads(run("leer", tmp / "sup.drawio").split("\naviso")[0])
+    check("supuestos (1)" in out and "ACT-01 «Revisar solicitud»: El carril no lo dice" in out and dm.SUPUESTO_TAREA in xml
+          and leido["pasos"][1].get("supuesto") == "El carril no lo dice ninguna fuente",
+          "supuesto: crear lo lista, la tarea lleva el borde discontinuo y leer lo devuelve")
+    run("bpmn", tmp / "sup.drawio")
+    check("Supuesto: El carril no lo dice" in (tmp / "sup.bpmn").read_text(encoding="utf-8"), "supuesto: en el BPMN, en documentation")
+    sidecar = json.loads((tmp / "sup.json").read_text(encoding="utf-8"))
+    (tmp / "c.json").write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-01", "supuesto": ""}}]}), encoding="utf-8")
+    out = run("actualizar", tmp / "sup.drawio", tmp / "c.json", esperado=png, env=env)
+    check(dm.SUPUESTO_TAREA not in (tmp / "sup.drawio").read_text(encoding="utf-8") and "supuestos (" not in out,
+          "supuesto: quitarlo con poner le quita el borde")
+    check(sidecar["colocacion"].get("motor") == "capas"
+          and json.loads((tmp / "sup.json").read_text(encoding="utf-8"))["colocacion"].get("motor") == "capas",
+          "--colocacion capas: queda en el .json y actualizar la repite")
+    # pestañas
+    def fase(nombre, sub=None):
+        pasos = [{"id": "EV-01", "tipo": "inicio", "carril": "A", "nombre": "Viene de antes"},
+                 {"id": "ACT-01", "tipo": "tarea", "carril": "A", "nombre": f"Revisar {nombre}"},
+                 {"id": "EV-02", "tipo": "fin", "carril": "B", "nombre": "Sigue"}]
+        flujos = [{"de": "EV-01", "a": "ACT-01"}, {"de": "ACT-01", "a": "EV-02"}]
+        if sub:
+            pasos.insert(2, {"id": "ACT-02", "tipo": "subproceso", "carril": "B", "nombre": sub})
+            flujos = [flujos[0], {"de": "ACT-01", "a": "ACT-02"}, {"de": "ACT-02", "a": "EV-02"}]
+        return {"proceso": nombre, "carriles": ["A", "B"], "pasos": pasos, "flujos": flujos}
+    libro = {"proceso": "Contratación", "paginas": [fase("Alta", "Evaluación"), fase("Evaluación")]}
+    (tmp / "libro.json").write_text(json.dumps(libro, ensure_ascii=False), encoding="utf-8")
+    run("validar", tmp / "libro.json")
+    out = run("crear", tmp / "libro.json", esperado=png, env=env)
+    top = ET.parse(tmp / "libro.drawio").getroot()
+    check([(d.get("id"), d.get("name")) for d in top.findall("diagram")] == [("pagina-1", "Alta"), ("pagina-2", "Evaluación")]
+          and 'link="data:page/id,pagina-2"' in (tmp / "libro.drawio").read_text(encoding="utf-8")
+          and (env is not None or all((tmp / f"libro-{k}.png").is_file() for k in (1, 2))),
+          "pestañas: un .drawio con una pestaña por fase, el subproceso enlaza con la suya y un PNG por pestaña")
+    leido = json.loads(run("leer", tmp / "libro.drawio"))
+    check([p["proceso"] for p in leido["paginas"]] == ["Alta", "Evaluación"] and leido["proceso"] == "Contratación",
+          "pestañas: leer devuelve todas")
+    (tmp / "cl.json").write_text(json.dumps({"pagina": "Evaluación", "cambios": [{"poner": {"id": "ACT-01", "nombre": "Evaluar ofertas"}}]},
+                                            ensure_ascii=False), encoding="utf-8")
+    out = run("actualizar", tmp / "libro.drawio", tmp / "cl.json", esperado=png, env=env)
+    leido = json.loads(run("leer", tmp / "libro.drawio"))
+    check(leido["paginas"][1]["pasos"][1]["nombre"] == "Evaluar ofertas" and leido["paginas"][0]["pasos"][1]["nombre"] == "Revisar Alta"
+          and "pestaña 1" not in out and 'link="data:page/id,pagina-2"' in (tmp / "libro.drawio").read_text(encoding="utf-8"),
+          "pestañas: actualizar cambia solo la pestaña que se dice")
+    out = run("comparar", tmp / "libro.drawio")
+    run("bpmn", tmp / "libro.drawio")
+    check("Sin cambios" in out and (tmp / "libro-1.bpmn").is_file() and (tmp / "libro-2.bpmn").is_file(),
+          "pestañas: comparar sin cambios y un .bpmn por pestaña")
+    # importar y comparar con una referencia
+    visio_ficticio.construir(tmp / "alta.vsdx")
+    out = run("importar", tmp / "alta.vsdx", "-o", tmp / "imp" / "alta.json")
+    imp = json.loads((tmp / "imp" / "alta.json").read_text(encoding="utf-8"))
+    check(imp["carriles"] == ["Solicitante", "Técnico"] and imp.get("externos") == ["Registro mercantil"]
+          and [(p["id"], p["tipo"], p["carril"]) for p in imp["pasos"]][:4] ==
+          [("EV-01", "inicio", "Solicitante"), ("ACT-01", "tarea", "Solicitante"), ("ACT-02", "tarea", "Técnico"), ("GW-01", "exclusiva", "Técnico")]
+          and {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"} in imp["flujos"] and imp.get("notas"),
+          "importar un .vsdx: pasos con su tipo y carril, flujos con su etiqueta, el participante externo y la nota")
+    run("crear", tmp / "imp" / "alta.json", esperado=png, env=env)
+    run("bpmn", tmp / "imp" / "alta.drawio")
+    run("importar", tmp / "imp" / "alta.bpmn", "-o", tmp / "imp" / "vuelta.json")
+    vuelta = json.loads((tmp / "imp" / "vuelta.json").read_text(encoding="utf-8"))
+    check(not dm.comparar(vuelta, json.loads((tmp / "imp" / "alta.json").read_text(encoding="utf-8"))),
+          "importar el .bpmn que exporta la skill devuelve el mismo proceso, con sus códigos")
+    out = run("comparar", tmp / "imp" / "alta.drawio", "--con", tmp / "alta.vsdx")
+    check("Igual que alta.vsdx" in out, "comparar --con: igual que el Visio del que sale")
+    ref = json.loads(json.dumps(vuelta))
+    ref["pasos"][2]["carril"] = "Solicitante"
+    ref["pasos"].append({"id": "ACT-09", "tipo": "sistema", "carril": "Técnico", "nombre": "Avisar al registro"})
+    (tmp / "ref.json").write_text(json.dumps(ref, ensure_ascii=False), encoding="utf-8")
+    out = run("comparar", tmp / "imp" / "alta.drawio", "--con", tmp / "ref.json")
+    check("«Revisar solicitud»: lo hace «Solicitante» en la referencia y «Técnico» en el diagrama" in out
+          and "falta «Avisar al registro»" in out, "comparar --con: el perfil equivocado y el paso que falta")
+    # flujos pegados: la salida «No» ya no va a menos de HUECO de la «Sí»
+    d = tmp / "pegados.drawio"
+    run("crear", AQUI / "datos" / "puerta-otro-carril.json", "-o", d, esperado=2, env=entorno(sin_navegador=True))
+    proc, geo, _ = dm.Fichero(str(d)).leer()
+    caminos = [c for _, c in _caminos(proc, geo)]
+    pegados = sum(1 for i, c in enumerate(caminos) for e in caminos[i + 1:] if en._pegados(c, e))
+    check(not pegados, f"flujos pegados: por capas, dos salidas de una puerta no bajan a menos de {en.HUECO} px ({pegados})")
+
+
+def crear_sin_json(tmp):
+    """Si `crear` no puede guardar el .json, no deja un .drawio a medias: sin su .json no se podría actualizar."""
+    (tmp / "solicitud.json").mkdir(parents=True)
+    out = run("crear", AQUI / "datos" / "solicitud.json", "-o", tmp / "solicitud.drawio", esperado=1)
+    check(not (tmp / "solicitud.drawio").exists() and "no se pudo guardar" in out,
+          "crear: si no puede guardar el .json, no deja el .drawio a medias")
+
+
 def main_sin_navegador():
     """Con DIAGRAMAS_SIN_NAVEGADOR=1, lo que se puede hacer sin navegador: dibujar el .drawio (también en tramos),
     leerlo, compararlo, exportar el BPMN y validar."""
@@ -1540,9 +2250,25 @@ def main_sin_navegador():
         resolucion_png(tmp / "resolucion")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
+        etiquetas_que_no_se_pisan(tmp / "etiquetas de flujo", entorno(sin_navegador=True))
         corredores_ortogonales(tmp / "corredores")
         tramos(tmp / "tramos", con_png=False)
         g3(tmp)
+        (tmp / "tema").mkdir()
+        tema(tmp / "tema")
+        (tmp / "abanico").mkdir()
+        abanico(tmp / "abanico", entorno(sin_navegador=True))
+        mover_paso()
+        nota_y_mensaje_apartados()
+        borde_y_recto()
+        columna_lado_y_mensaje()
+        letra_de_tareas()
+        estructura()
+        leyenda()
+        carriles_ajustados()
+        retrocesos()
+        crear_sin_json(tmp / "sin json")
+        ordenes_nuevas(tmp / "ordenes", entorno(sin_navegador=True))
         malo = {"proceso": "x", "carriles": ["A"], "pasos": [{"id": "ACT-01", "tipo": "tareas", "carril": "B", "nombre": "x"}],
                 "flujos": [{"de": "ACT-01", "a": "ACT-02"}]}
         (tmp / "malo.json").write_text(json.dumps(malo), encoding="utf-8")
@@ -1571,11 +2297,28 @@ def main():
         resolucion_png(tmp / "resolucion")
         conexiones(tmp / "conexiones")
         etiquetas_de_puertas(tmp / "etiquetas")
+        etiquetas_que_no_se_pisan(tmp / "etiquetas de flujo")
+        etiquetas_que_no_se_pisan(tmp / "etiquetas de flujo sin", entorno(sin_navegador=True))
         corredores_ortogonales(tmp / "corredores")
         png_viejo(tmp / "png viejo")
         tramos(tmp / "tramos")
         tramos(tmp / "tramos sin navegador", con_png=False)
         g3(tmp / "g3")
+        for nombre, prueba in (("tema", tema), ("abanico", abanico),
+                               ("abanico sin", lambda t: abanico(t, entorno(sin_navegador=True)))):
+            (tmp / nombre).mkdir()
+            prueba(tmp / nombre)
+        mover_paso()
+        nota_y_mensaje_apartados()
+        borde_y_recto()
+        columna_lado_y_mensaje()
+        letra_de_tareas()
+        estructura()
+        leyenda()
+        carriles_ajustados()
+        retrocesos()
+        crear_sin_json(tmp / "sin json")
+        ordenes_nuevas(tmp / "ordenes")
         nota_y_etiqueta(tmp / "nota con el motor")
         d = tmp / "solicitud.drawio"
         # 1. crear
@@ -1590,6 +2333,16 @@ def main():
         sys.path.insert(0, str(SCRIPTS)); import drawio_modelo as dm
         check(dm.comparar(base, leido) == [], "leer: el .drawio devuelve el mismo proceso")
         run("crear", EJEMPLO, "-o", tmp, esperado=1)
+        # salida cortada por una tubería (`crear … | head -1`): el .drawio y el PNG se escriben igual
+        corta = tmp / "tuberia"
+        corta.mkdir()
+        p = subprocess.Popen(CLI + ["crear", str(EJEMPLO), "-o", str(corta)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p.stdout.close()
+        err = p.stderr.read().decode("utf-8", "replace")
+        p.wait()
+        check(p.returncode == 0 and (corta / "solicitud.png").is_file() and "BrokenPipe" not in err,
+              "crear: con la salida cerrada por quien la lee, escribe el .drawio y el PNG y sale con 0"
+              + (f" (sale con {p.returncode}: {err.strip()[-160:]})" if p.returncode else ""))
         # 2. actualizar con colocación automática
         (tmp / "c1.json").write_text(json.dumps({"cambios": [
             {"poner": {"id": "ACT-09", "tipo": "tarea", "carril": "Técnico de la unidad gestora", "nombre": "Pedir aclaraciones"}},
@@ -1629,9 +2382,9 @@ def main():
         co = zlib.compressobj(9, zlib.DEFLATED, -15)
         full.getroot().find("diagram").text = base64.b64encode(co.compress(raw.encode()) + co.flush()).decode()
         full.write(d, encoding="utf-8")
-        run("actualizar", d, tmp / "c1.json", esperado=1)
+        run("actualizar", d, tmp / "c1.json", esperado=3)
         check(True, "actualizar: se niega mientras haya cambios a mano sin aceptar")
-        out = run("comparar", d, esperado=1)
+        out = run("comparar", d, esperado=3)
         check("código asignado: ACT-11" in out and "código asignado: GW-05" in out and "«Revisar la documentación aportada»" in out
               and "flujo nuevo: ACT-01 → ACT-11 «si hay tasas»" in out and "nota en el dibujo (sale en el PNG): «Duda del cliente»" in out,
               "comparar: códigos para lo añadido, etiquetas HTML limpias, notas listadas, fichero comprimido")
@@ -1773,7 +2526,7 @@ def main():
                           {"de": "GW-01", "a": "EV-02", "etiqueta": "Sí"}, {"de": "GW-01", "a": "EV-03", "etiqueta": "No"},
                           {"de": "EV-02", "a": "EV-04"}, {"de": "EV-03", "a": "EV-04"}]}
         (tmp / "rev.json").write_text(json.dumps(rev), encoding="utf-8")
-        run("crear", tmp / "rev.json", "-o", tmp / "rev")
+        run("crear", tmp / "rev.json", "-o", tmp / "rev", "--colocacion", "mermaid")   # el caso es de Mermaid
         proc_r, geo_r, _ = dm.leer(str(tmp / "rev" / "rev.drawio"))
         por_debajo = [f["a"] for i, f in enumerate(proc_r["flujos"]) if f["a"].startswith("EV")
                       and geo_r["flujos"][i] and geo_r["flujos"][i][-1][1] > geo_r["pasos"][f["a"]][1] + 25]

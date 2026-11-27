@@ -137,7 +137,8 @@ def exportar(proc, geo, destino):
         if p.get("temporizador") and p["tipo"] in ("temporizador", "inicio_temporizador"):
             definicion = _temporizador(str(p["temporizador"]))
         # en el orden del esquema: documentation, incoming, outgoing y la definición del evento
-        dentro = (f"<bpmn:documentation>nodo {escape(str(p['nodo']))}</bpmn:documentation>" if p.get("nodo") else "") + \
+        doc = "; ".join(([f"nodo {p['nodo']}"] if p.get("nodo") else []) + ([f"Supuesto: {p['supuesto']}"] if p.get("supuesto") else []))
+        dentro = (f"<bpmn:documentation>{escape(doc)}</bpmn:documentation>" if doc else "") + \
             "".join(f"<bpmn:incoming>{x}</bpmn:incoming>" for x in ent.get(p["id"], [])) + \
             "".join(f"<bpmn:outgoing>{x}</bpmn:outgoing>" for x in sal.get(p["id"], [])) + definicion
         proc_xml.append(f'<bpmn:{tag} id="{_id(p["id"])}" name={quoteattr(p.get("nombre", ""))}{extra}>{dentro}</bpmn:{tag}>')

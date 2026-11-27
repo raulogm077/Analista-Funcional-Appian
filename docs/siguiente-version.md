@@ -114,6 +114,12 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
 - **Seguridad de acciones de registro con constante.** Diez acciones no salían a nadie (una vez, sin causa
   demostrada). Contrastarlo escribe en Indra-spain: solo si Raúl lo autoriza; hasta entonces, sin regla. [prueba]
 - **Diagramas.** Reducir los 30/38 avisos residuales solo con una mejora medida, sin relajar detectores.
+- **El SKILL.md, del mismo commit que los scripts.** Una sesión dibujó con los scripts de una rama y siguió el SKILL.md del plugin instalado, de otra versión, y no aplicó las reglas nuevas (pedir el DF, prefijos «Supuesto:»). Al usar una skill desde una rama o una copia, se lee su SKILL.md de esa misma copia. Si vuelve a pasar, una frase en `CLAUDE.md`. Segundo caso (24-nov): un hilo dibujó con el plugin instalado en su sesión (0.8.0-beta.3) y no con la rama del PR abierto, y el diagrama salió sin el aspecto nuevo; se rehízo con los scripts de la rama. El encargo de un hilo de diagramas debería decir de qué copia se usan los scripts. [persona y sesión]
+- **Diagramas: lo que queda de las órdenes que faltaban** (auditoría del 10-nov). Se hicieron pestañas, `importar`,
+  `comparar --con`, `supuesto`, carriles por sistema y un PNG por pestaña (`evaluaciones.md`). No se hizo el campo `ref`:
+  el código del cliente entre corchetes al final del nombre ya se dibuja aparte y `leer` lo devuelve; si un DF necesita
+  más de un código por tarea, se retoma. Tampoco «bajar una puerta de fila cuando quede más claro»: hace falta un
+  criterio medible antes de tocar la colocación. [diagramas]
 - **Un literal propuesto, bajo ✅.** En P7 («juntas») y en P7 quinquies, el texto del aviso «Indica el centro de
   coste», que ninguna fuente da, quedó en HU-06.2 con ✅ y la fuente del correo. La entrega lo declaraba propuesto, y
   lo que propone el analista va con 🔶. Es el mismo caso ficticio tres veces (también en P7 sexies). En P7 septies el
@@ -140,6 +146,45 @@ método con datos ficticios; y las galerías HTML de `appian-prototipos/galerias
   del entorno.
 - **Rama `yaroslav/plantilla-DF-cliente`** en GitHub, solo si Raúl lo pide: 17 commits del 19-oct sin PR, ni en
   `main` ni en esta rama; es independiente de ella. [persona]
+- **Diagramas: variante oscura del PNG.** El aspecto nuevo (tarjetas con pictograma, cabecera y paleta) es solo
+  claro. Una variante oscura, si un documento o una web la pide; el `.drawio` no cambia. [diagramas]
+- **Diagramas: abanico en más casos.** Las salidas en abanico solo cubren las de una puerta hacia su misma fila y a
+  la derecha. Si un proceso real muestra cruces en otros casos (destinos a la izquierda o en otra fila), ampliarlo con
+  su prueba en `selftest.py` (`cruces`). [diagramas]
+- **Diagramas: elegir la colocación con menos cruces.** En un proceso real con tres vueltas atrás a la misma tarea
+  (rechazos y errores que vuelven a «Rellenar la plantilla»), Mermaid dejó muchos cruces y la colocación por capas
+  ninguno; se entregó la de capas (`DIAGRAMAS_SIN_NAVEGADOR=1` al crear y `png` después). Medir los cruces de las dos
+  y quedarse con la mejor, con su prueba; mientras, `actualizar` con navegador vuelve a colocar con Mermaid. Segundo
+  caso (24-nov): un circuito de aprobación con tres revisiones que devuelven a la misma tarea; Mermaid lo dejó de
+  derecha a izquierda y con cruces largos, y por capas se leía de izquierda a derecha. Tercer caso (24-nov): el
+  de inversiones, rehecho con las reglas de estructura, salía con Mermaid de derecha a izquierda y con vueltas largas;
+  se entregó por capas (más ancho, 6.025 px, pero de izquierda a derecha). Cuarto caso (24-nov): un ciclo mensual
+  con vueltas a un temporizador intermedio y a la tarea que registra; Mermaid intercalaba el alta con el ciclo y por
+  capas salía en orden. Alternativa mínima, si medir
+  las dos cuesta: una opción `--colocacion capas` en `crear` y `actualizar`. [diagramas]
+- **Diagramas: flujos pegados en la colocación por capas.** `mejorar` no cuenta dos flujos cerca cuando coloca por
+  capas («ya va cada uno por su fila»), pero en un proceso real dos verticales de vueltas atrás distintas quedaron a
+  11 px y se leían como una sola línea con cruces (24-nov). Contar también ahí los pegados (`_pegados`, menos de
+  `HUECO`) y medir en los procesos al azar de `selftest.py` si añade cruces. [diagramas]
+- **Diagramas: qué hace Appian con varias salidas de un nodo.** Desde el 24-nov, `validar` avisa de una tarea con
+  varias salidas sin puerta, porque en BPMN se siguen todas a la vez, y el SKILL.md pide una puerta exclusiva detrás.
+  Falta mirar en el Dev MCP (un process model real) si Appian hace lo mismo, para decir en ingeniería inversa si esas
+  salidas son paralelas o condiciones, y si `bpmn_export.py` debe escribir la condición cuando venga de Appian. [diagramas]
+- **Diagramas: la línea de un plazo por la misma recta que la salida de su tarea.** En una prueba con el plugin
+  cargado (25-nov, proceso ficticio por capas), la entrada a la tarea ocupaba su lado de abajo; la línea discontinua
+  al plazo salió por arriba, rodeó la tarea y bajó por la misma vertical por la que subía su salida hacia la puerta
+  (60 px pegadas). `mejorar` la deja así aunque `trazar_todo` no deja que dos flujos ajenos compartan tramo, y
+  `separar_pegados` no lo ve (`_pegados` excluye la misma recta) ni puede apartarla sin un cruce. Mirar en qué paso de
+  `mejorar` entran los dos caminos sin pasar por esa regla; lo natural era la salida por arriba (la puerta está arriba)
+  y el plazo por la derecha. Relacionado con 4.20 del recopilatorio (dos plazos que comparten tramo). [diagramas]
+- **Diagramas: el fichero de supuestos cuando el DF pasa a ser la referencia.** En la prueba con el plugin cargado del
+  25-nov (caso real GC-011), al llegar el DF la sesión borró `supuestos-X.md` porque «solo se hace sin diagrama
+  aprobado», aunque quedaban un supuesto, cuatro contradicciones entre el DF y las reuniones y lo pendiente de validar.
+  Decidir si el fichero se queda mientras haya algo por confirmar. [diagramas]
+- **Diagramas: cuándo las fuentes «rediseñan» el aprobado.** En la misma prueba, la sesión dijo que las reuniones,
+  dos meses posteriores, «no cambian el proceso» aunque añaden una revisión manual y otra forma de subir, y tomó el DF
+  como referencia; aun así dibujó lo de las reuniones en los dos puntos. En la primera pasada, sin el arreglo, ni
+  comparó las fechas. Si vuelve a pasar con otro caso, dar en `fuentes.md` un criterio más concreto. [diagramas]
 - **Tarea no prioritaria**, solo cuando Raúl lo pida: renombrar el plugin a «Appian Software Factory» en todos los
   sitios (GitHub, carpeta local, `plugin.json`, el prefijo de las skills, README, gráficos y `CLAUDE.md`).
 

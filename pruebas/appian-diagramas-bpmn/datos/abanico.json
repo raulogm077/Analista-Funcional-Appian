@@ -1,0 +1,25 @@
+{
+  "proceso": "Reparto de expedientes (ejemplo ficticio)",
+  "carriles": ["Registro", "Aplicación"],
+  "pasos": [
+    {"id": "EV-01", "tipo": "inicio", "carril": "Registro", "nombre": "Llega un expediente"},
+    {"id": "ACT-01", "tipo": "tarea", "carril": "Registro", "nombre": "Registrar el expediente [EJ-01.001]"},
+    {"id": "ACT-02", "tipo": "sistema", "carril": "Aplicación", "nombre": "Clasificar el expediente"},
+    {"id": "GW-01", "tipo": "exclusiva", "carril": "Aplicación", "nombre": "¿A qué unidad va según su materia?"},
+    {"id": "EV-10", "tipo": "fin", "carril": "Aplicación", "nombre": "Sigue en la unidad de licencias"},
+    {"id": "EV-11", "tipo": "fin", "carril": "Aplicación", "nombre": "Sigue en la unidad de sanciones"},
+    {"id": "EV-12", "tipo": "fin", "carril": "Aplicación", "nombre": "Sigue en la unidad de ayudas"},
+    {"id": "EV-13", "tipo": "fin", "carril": "Aplicación", "nombre": "Sigue en la unidad de contratación pública"},
+    {"id": "EV-14", "tipo": "fin", "carril": "Aplicación", "nombre": "Sigue en la unidad de recursos y reclamaciones"}
+  ],
+  "flujos": [
+    {"de": "EV-01", "a": "ACT-01"},
+    {"de": "ACT-01", "a": "ACT-02"},
+    {"de": "ACT-02", "a": "GW-01"},
+    {"de": "GW-01", "a": "EV-10", "etiqueta": "LIC", "defecto": true},
+    {"de": "GW-01", "a": "EV-11", "etiqueta": "SAN"},
+    {"de": "GW-01", "a": "EV-12", "etiqueta": "AYU"},
+    {"de": "GW-01", "a": "EV-13", "etiqueta": "CON"},
+    {"de": "GW-01", "a": "EV-14", "etiqueta": "REC"}
+  ]
+}

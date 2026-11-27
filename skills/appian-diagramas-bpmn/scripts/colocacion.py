@@ -25,6 +25,7 @@ SEPARACION_Y = 28        # hueco mínimo entre formas en vertical, dentro de un 
 MARGEN = 16              # hueco mínimo entre una forma y el borde de su carril
 NOTA_ANCHO = 160
 NOTA_HUECO = 18          # distancia entre la nota y su paso (se ve la línea de asociación)
+NOTA_AIRE = 16           # a cada lado de una nota, para que un flujo que pasa junto a ella no la toque
 EXTERNO_ALTO = 60
 EXTERNO_HUECO = 40      # hueco entre carriles y participantes: ahí va la etiqueta del flujo de mensaje
 ANCHO_LEGIBLE = 1600     # más ancho que esto, en una página vertical el texto queda pequeño
@@ -35,7 +36,7 @@ BORDE = ("temporizador", "mensaje", "intermedio", "error")   # eventos que, unid
 
 
 # ---------------------------------------------------------------- colocación de reserva (sin navegador)
-def capas(proc):
+def capas(proc, sin_relevo=frozenset()):
     """Capa de cada paso (el camino más largo desde un paso sin entradas, sin contar las vueltas atrás) y los índices
     de los flujos que vuelven atrás. Los flujos de mensaje no cuentan."""
     ids = [p["id"] for p in proc["pasos"]]
@@ -63,20 +64,62 @@ def capas(proc):
             elif sig[0] not in estado:
                 estado[sig[0]] = 1
                 pila.append((sig[0], iter(salen[sig[0]])))
-    capa = {pid: 0 for pid in ids}
-    for u in reversed(orden):
-        for v, i in salen[u]:
-            if i not in atras:
-                capa[v] = max(capa[v], capa[u] + 1)
+    def por_orden(minimo, peso=None):
+        capa = dict(minimo)
+        for u in reversed(orden):
+            for v, i in salen[u]:
+                if i not in atras:
+                    capa[v] = max(capa[v], capa[u] + (peso or {}).get(i, 1))
+        return capa
+    capa = por_orden({pid: 0 for pid in ids})
+    relevo = relevos(proc, atras) - set(sin_relevo)
+    if relevo:
+        # las dos tareas, en la misma columna. Si de la primera sale algo más (un plazo y lo que le sigue), ella va a la
+        # columna de la segunda y lo que sigue a la segunda, una columna más allá: lo que sale de la primera acaba antes
+        # de que pase por allí ningún otro flujo
+        minimo, peso = {pid: 0 for pid in ids}, {}
+        for i in relevo:
+            de, a = proc["flujos"][i]["de"], proc["flujos"][i]["a"]
+            peso[i] = 0
+            if len(salen[de]) > 1:
+                minimo[de] = capa[a]
+                for _, j in salen[a]:
+                    peso[j] = 2
+        capa = por_orden(minimo, peso)
     return capa, atras
 
 
-def por_capas(proc, eventos, puertas, cabecera):
+TAREAS = {"tarea", "sistema", "script", "manual", "subproceso", "llamada"}
+
+
+def relevos(proc, atras):
+    """Los flujos en los que una tarea pasa el trabajo a otra del carril de al lado, que solo llega desde ella: las dos
+    van en la misma columna, una encima de la otra, y el flujo baja (o sube) recto. Así lo que vuelve a la primera no
+    cruza el que va de una a otra."""
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    carril = {p["id"]: p["carril"] for p in proc["pasos"]}
+    fila = {c: k for k, c in enumerate(proc["carriles"])}
+    adelante = [(i, f) for i, f in enumerate(proc["flujos"])
+                if f["de"] in tipo and f["a"] in tipo and i not in atras and not f.get("discontinuo")]
+    salen, entran = defaultdict(list), defaultdict(list)
+    for i, f in adelante:
+        salen[f["de"]].append(i)
+        entran[f["a"]].append(i)
+    out = set()
+    for i, f in adelante:
+        de, a = f["de"], f["a"]
+        if tipo[de] in TAREAS and tipo[a] in TAREAS and len(salen[de]) == 1 and len(entran[a]) == 1 \
+                and abs(fila[carril[de]] - fila[carril[a]]) == 1:
+            out.add(i)
+    return out
+
+
+def por_capas(proc, eventos, puertas, cabecera, sin_relevo=frozenset()):
     """Geometría como la del motor: {"carriles": {nombre: (y, h)}, "pasos": {id: (cx, cy)}, "flujos": [[(x, y)…]],
     "ancho"}. Una columna por capa y, en cada carril, una fila por paso de la misma capa (ordenadas como sus
     predecesores, para que se crucen poco). Un flujo que salta capas ocupa una fila en las capas que cruza y una vuelta
     atrás va por un pasillo debajo de las filas del carril al que vuelve: así ninguno atraviesa un paso."""
-    capa, atras = capas(proc)
+    capa, atras = capas(proc, sin_relevo)
     carril = {p["id"]: p["carril"] for p in proc["pasos"]}
     orden_paso = {p["id"]: k for k, p in enumerate(proc["pasos"])}
     secuencia = [(i, f) for i, f in enumerate(proc["flujos"]) if f["de"] in carril and f["a"] in carril]
@@ -125,6 +168,15 @@ def por_capas(proc, eventos, puertas, cabecera):
                 posicion[e] = indice[nombre] * 1000 + fila[e]
                 libre = fila[e] + max(1, salidas[e])
     bajar_a_su_siguiente(por_capa, previos, lado_de, fila, salidas)
+    # un relevo solo si entre las dos tareas de la columna no queda nada: si no, el flujo no podría bajar recto
+    malos = set()
+    for i in relevos(proc, atras) - set(sin_relevo):
+        de, a = ("paso", proc["flujos"][i]["de"]), ("paso", proc["flujos"][i]["a"])
+        lo, hi = sorted(((indice[lado_de[de]], fila[de]), (indice[lado_de[a]], fila[a])))
+        if any(e not in (de, a) and lo < (indice[lado_de[e]], fila[e]) < hi for e in por_capa[capa[de[1]]]):
+            malos.add(i)
+    if malos:
+        return por_capas(proc, eventos, puertas, cabecera, frozenset(sin_relevo) | malos)
     filas = {c: max([fila[e] + 1 for e in fila if lado_de[e] == c] or [1]) for c in proc["carriles"]}
     geo = {"carriles": {}, "pasos": {}, "flujos": [], "etiqueta_en_horizontal": True}
     y = 0.0
@@ -218,6 +270,13 @@ def por_capas(proc, eventos, puertas, cabecera):
     ultima = max(capa.values(), default=0)
     ancho_col = [COLUMNA] * (ultima + 2)
     separacion_hueco = {}
+    for n in proc.get("notas") or []:
+        # el hueco a cada lado de una columna con nota, lejos de la nota: el flujo que baja por él no la toca
+        if n.get("paso") in capa:
+            c, mitad = capa[n["paso"]], ancho_nota(n.get("texto")) / 2 + NOTA_AIRE + 6
+            for k in (c - 1, c):
+                if k >= 0:
+                    ancho_col[k] = max(ancho_col[k], 2 * mitad)
     for i, f in secuencia:
         if f.get("etiqueta") and tipo[f["de"]] in puertas and i not in atras:
             ancho_col[capa[f["de"]]] = max(ancho_col[capa[f["de"]]], ancho_columna_puerta(proc, f))
@@ -591,11 +650,14 @@ def lados_nota(proc, usados, lados):
     cruzaría), corrida para que los flujos no la crucen. Si no queda otro, el de la etiqueta, pero al lado de ella
     («fuera_izquierda» o «fuera_derecha»): su línea entra en el paso por debajo de la etiqueta."""
     out = []
+    con_nota = {}      # paso: los lados que ya tiene una nota suya, para que la siguiente no la tape
     for n in proc.get("notas") or []:
         u = usados.get(n["paso"], {})
         etiqueta = lados.get(n["paso"])
-        libres = [lado for lado in ("arriba", "abajo") if lado not in u and lado != etiqueta]
-        con_flujos = [lado for lado in ("arriba", "abajo") if lado != etiqueta and _corrida(u.get(lado, set()))]
+        tomados = con_nota.setdefault(n["paso"], set())
+        libres = [lado for lado in ("arriba", "abajo") if lado not in u and lado != etiqueta and lado not in tomados]
+        con_flujos = [lado for lado in ("arriba", "abajo") if lado != etiqueta and lado not in tomados
+                      and _corrida(u.get(lado, set()))]
         if libres:
             out.append((libres[0], "centro"))
         elif con_flujos:
@@ -604,6 +666,7 @@ def lados_nota(proc, usados, lados):
             out.append((etiqueta, "fuera_derecha" if _corrida(u.get(etiqueta, set())) == "derecha" else "fuera_izquierda"))
         else:
             out.append(("arriba", "centro"))
+        tomados.add(out[-1][0])
     return out
 
 
@@ -656,8 +719,8 @@ def extensiones(proc, lados, notas_lado, tam, eventos, puertas):
             continue
         ancho = ancho_nota(n.get("texto"))
         izq = -x_nota(0, desplazamiento, ancho)
-        e[0] = max(e[0], izq)
-        e[1] = max(e[1], ancho - izq)
+        e[0] = max(e[0], izq + NOTA_AIRE)        # con aire: una flecha que baja junto a la nota no la toca
+        e[1] = max(e[1], ancho - izq + NOTA_AIRE)
         k = 2 if lado == "arriba" else 3
         if desplazamiento.startswith("fuera"):    # al lado de la etiqueta, desde el borde del paso
             e[k] = max(e[k], tam[next(p["tipo"] for p in proc["pasos"] if p["id"] == n["paso"])][1] / 2
@@ -1054,6 +1117,130 @@ def despejar_eventos_de_borde(proc, geo, tam, cabecera):
     return geo
 
 
+ABANICO = 18             # entre dos salidas de una puerta que van en paralelo (cabe la etiqueta de cada una)
+
+
+def _segmentos(camino):
+    return list(zip(camino, camino[1:]))
+
+
+def _se_cortan(a, b):
+    """Si dos tramos ortogonales se cruzan o van uno encima del otro."""
+    (p, q), (r, t) = a, b
+    if p[1] == q[1] and r[0] == t[0]:          # horizontal y vertical
+        return min(p[0], q[0]) < r[0] < max(p[0], q[0]) and min(r[1], t[1]) < p[1] < max(r[1], t[1])
+    if p[0] == q[0] and r[1] == t[1]:
+        return _se_cortan(b, a)
+    if p[1] == q[1] == r[1] == t[1]:           # los dos horizontales, a la misma altura
+        return min(max(p[0], q[0]), max(r[0], t[0])) - max(min(p[0], q[0]), min(r[0], t[0])) > 1
+    if p[0] == q[0] == r[0] == t[0]:
+        return min(max(p[1], q[1]), max(r[1], t[1])) - max(min(p[1], q[1]), min(r[1], t[1])) > 1
+    return False
+
+
+def abanico_de_salidas(proc, geo, tam, eventos, puertas):
+    """Las salidas de una puerta hacia pasos de su misma fila que no se alcanzan en línea recta (hay otro paso en medio)
+    van en abanico: cada una por su pasillo, paralelo a la fila y más lejos cuanto más lejos está su destino, y bajan
+    (o suben) a él. Así no se cruzan entre ellas ni pasan por encima de una forma, de la etiqueta de un evento o una
+    puerta ni de otro flujo, y la etiqueta de cada salida va justo antes de su destino. El abanico va por el lado
+    contrario a la etiqueta de la puerta; la etiqueta de cada destino, al otro lado del abanico. Si no cabe en el carril
+    sin pisar nada, la salida se queda como estaba."""
+    centro = {pid: geo["pasos"][pid][:2] for pid in geo["pasos"]}
+    tipo = {p["id"]: p["tipo"] for p in proc["pasos"]}
+    nombre = {p["id"]: p.get("nombre") for p in proc["pasos"]}
+    carril = {p["id"]: p["carril"] for p in proc["pasos"]}
+    lados = geo.setdefault("etiquetas", {})
+
+    def caja(pid):
+        (cx, cy), (w, h) = centro[pid], tam[tipo[pid]]
+        return (cx - w / 2, cy - h / 2, w, h)
+
+    def caja_etiqueta(pid, lado):
+        if not (lado and nombre.get(pid)) or tipo[pid] not in eventos | puertas:
+            return None
+        cx, cy, (w, h) = *centro[pid], tam[tipo[pid]]
+        alto = alto_texto(nombre[pid])
+        return (cx - ANCHO_ETIQUETA / 2, cy - h / 2 - alto if lado == "arriba" else cy + h / 2, ANCHO_ETIQUETA, alto)
+
+    def camino_de(i, f):
+        pts = geo["flujos"][i] if i < len(geo.get("flujos", [])) else []
+        if f["de"] not in centro or f["a"] not in centro:
+            return []
+        return [tuple(centro[f["de"]])] + [tuple(p) for p in pts] + [tuple(centro[f["a"]])]
+
+    def corta_caja(p, q, c, m=8):
+        # con holgura: un pasillo pegado a una forma parece que entra en ella
+        x, y, w, h = c[0] - m, c[1] - m, c[2] + 2 * m, c[3] + 2 * m
+        if p[0] == q[0]:
+            return x < p[0] < x + w and min(p[1], q[1]) < y + h and max(p[1], q[1]) > y
+        return y < p[1] < y + h and min(p[0], q[0]) < x + w and max(p[0], q[0]) > x
+
+    for g in [p["id"] for p in proc["pasos"] if p["tipo"] in puertas and p["id"] in centro]:
+        gx, gy = centro[g]
+        salidas = []
+        for i, f in enumerate(proc["flujos"]):
+            t = f["a"]
+            if f["de"] != g or t not in centro or t == g or abs(centro[t][1] - gy) > 2 or centro[t][0] <= gx:
+                continue
+            en_medio = any(abs(centro[o][1] - gy) <= 2 and gx < centro[o][0] < centro[t][0] for o in centro if o not in (g, t))
+            if en_medio:
+                salidas.append((centro[t][0], i, t))
+        if not salidas:
+            continue
+        salidas.sort()
+        destinos = {t for _, _, t in salidas}
+        # los eventos y puertas de la fila que el abanico salta: su etiqueta también pasa al otro lado
+        saltados = {o for o in centro if o not in destinos | {g} and tipo[o] in eventos | puertas
+                    and abs(centro[o][1] - gy) <= 2 and gx < centro[o][0] < salidas[-1][0]}
+        girables = destinos | saltados
+        y0, h0 = geo["carriles"][carril[g]][:2]
+        for lado in (("abajo", "arriba") if lados.get(g) != "abajo" else ("arriba", "abajo")):
+            signo = 1 if lado == "abajo" else -1
+            otro = "arriba" if lado == "abajo" else "abajo"
+            ajenos = [i for _, i, _ in salidas]
+            obstaculos = [caja(o) for o in centro if o != g]
+            # la etiqueta de la puerta está al otro lado: no estorba al tronco que sale por este
+            obstaculos += [c for o in centro if o not in girables and (o != g or lados.get(g) == lado)
+                           for c in [caja_etiqueta(o, lados.get(o))] if c]
+            obstaculos += [c for t in girables for c in [caja_etiqueta(t, otro)] if c]
+            obstaculos += [tuple(n) for n in geo.get("anotaciones") or []]
+            lineas = [s for k, f in enumerate(proc["flujos"]) if k not in ajenos for s in _segmentos(camino_de(k, f))]
+            borde = gy + signo * tam[tipo[g]][1] / 2
+            nuevos, y = {}, None
+            for _, i, t in salidas:
+                th = tam[tipo[t]][1]
+                y = (gy + signo * (max(tam[tipo[g]][1], th) / 2 + ABANICO + 8)) if y is None else y + signo * ABANICO
+                while y0 + 30 <= y <= y0 + h0 - 8:
+                    camino = [(gx, borde), (gx, y), (centro[t][0], y), (centro[t][0], centro[t][1] + signo * th / 2)]
+                    tramos_ = _segmentos(camino)
+                    propia = caja(t)  # el último tramo llega a su borde: la holgura no cuenta para ella
+                    libre = not any(corta_caja(p, q, c) for p, q in tramos_ for c in obstaculos if c != propia)
+                    libre = libre and not any(_se_cortan(a, b) for a in tramos_ for b in lineas)
+                    if libre:
+                        break
+                    y += signo * 6
+                else:
+                    nuevos = None
+                    break
+                nuevos[i] = (y, t)
+            if nuevos:
+                for o in saltados:
+                    if lados.get(o):
+                        lados[o] = otro
+                for i, (yy, t) in nuevos.items():
+                    geo["flujos"][i] = [(gx, yy), (centro[t][0], yy)]
+                    if lados.get(t):
+                        lados[t] = otro
+                    # la etiqueta, en el pasillo, justo antes de bajar (o subir) a su destino
+                    th = tam[tipo[t]][1]
+                    l1, l2, l3 = abs(yy - borde), centro[t][0] - gx, abs(yy - centro[t][1]) - th / 2
+                    w = ancho_etiqueta_flujo(proc["flujos"][i].get("etiqueta") or "")
+                    d = l1 + max(l2 - w / 2 - 14, l2 / 2)
+                    geo.setdefault("etiquetas_flujo", {})[i] = 2 * d / (l1 + l2 + l3) - 1
+                break
+    return geo
+
+
 def ajustar(proc, geo, tam, eventos, puertas, cabecera):
     """Todo lo anterior, en orden: lados, separación, notas y externos."""
     usados = lados_usados(proc, geo)
@@ -1067,13 +1254,108 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
     # introducir rutas nuevas (p. ej. posiciones importadas de Appian).
     generado = geo.get("etiqueta_en_horizontal") or not all(p.get("posicion") for p in proc["pasos"])
     if generado:
-        if geo.get("etiqueta_en_horizontal"):
-            import enrutado
-            enrutado.mejorar(proc, geo, tam, cabecera)
+        import enrutado
+        if not geo.get("etiqueta_en_horizontal"):
+            enrutado.ortogonalizar(proc, geo, tam)
+            geo["trazado_generado"] = True       # con Mermaid: la herramienta también puede volver a trazarlo
+        enrutado.mover_pasos(proc, geo, tam, cabecera)
+        enrutado.mejorar(proc, geo, tam, cabecera)
+        geo.pop("trazado_generado", None)
         despejar_eventos_de_borde(proc, geo, tam, cabecera)
         separar_ida_vuelta(proc, geo, tam, cabecera)
+        abanico_de_salidas(proc, geo, tam, eventos, puertas)
+        enrutado.enderezar(proc, geo, tam)
+        enrutado.quitar_retrocesos(proc, geo, tam)
+        enrutado.cambiar_de_lado(proc, geo, tam, cabecera)
+        enrutado.columnas_rectas(proc, geo, tam, cabecera)
+        enrutado.salir_por_lado_libre(proc, geo, tam, cabecera)
+        enrutado.separar_pegados(proc, geo, tam, cabecera)
+    compactar_carriles(proc, geo, tam, eventos, puertas)
     colocar_externos(proc, geo)
     return geo
+
+
+SOBRA_CARRIL = 24   # hueco vacío que se deja arriba (bajo el nombre del carril) y abajo de lo que ocupa un carril
+ALTO_MINIMO = 26 + 96 + 2 * MARGEN   # un carril con una fila de tareas, bajo su nombre
+
+
+def compactar_carriles(proc, geo, tam, eventos, puertas):
+    """Quita el hueco vacío de arriba y de abajo de cada carril, que queda cuando el motor reserva sitio que al final
+    no usa nada. Ocupa lo que hay en el carril: las formas con el nombre de su evento o su puerta, las notas y los
+    tramos horizontales de los flujos con su etiqueta; un tramo vertical no ocupa, se acorta. Todo lo que queda debajo
+    de un hueco que se quita sube lo mismo, así que nada se cruza ni se pisa de nuevo. Devuelve los px que quita."""
+    import drawio_modelo as dm
+    carriles = sorted(geo["carriles"].items(), key=lambda kv: kv[1][0])
+    ocupado = {c: [] for c, _ in carriles}
+
+    def carril_de(y):
+        return next((c for c, (y0, h) in carriles if y0 <= y < y0 + h), None)
+
+    def ocupa(y0, y1, carril=None):
+        c = carril or carril_de((y0 + y1) / 2)
+        if c in ocupado:
+            ocupado[c].append((y0, y1))
+
+    pasos = {p["id"]: p for p in proc["pasos"]}
+    for pid, (cx, cy, *_) in geo["pasos"].items():
+        p = pasos.get(pid)
+        if p is None:
+            continue
+        h = tam[p["tipo"]][1]
+        arriba, abajo = cy - h / 2, cy + h / 2
+        if p["tipo"] in eventos | puertas and p.get("nombre"):
+            alto = alto_texto(p["nombre"]) + 2
+            if geo.get("etiquetas", {}).get(pid) == "arriba":
+                arriba -= alto
+            else:
+                abajo += alto
+        ocupa(arriba, abajo, p["carril"] if p["carril"] in ocupado else None)
+    for nota, (_, y, _, h) in zip(proc.get("notas") or [], geo.get("anotaciones") or []):
+        carril = pasos.get(nota["paso"], {}).get("carril")
+        ocupa(y, y + h, carril if carril in ocupado else None)
+    externos = set(proc.get("externos") or [])
+    for i, (f, pts) in enumerate(zip(proc["flujos"], geo["flujos"])):
+        if f["de"] in externos or f["a"] in externos or f["de"] not in geo["pasos"] or f["a"] not in geo["pasos"]:
+            continue
+        camino = dm._camino(geo["pasos"][f["de"]][:2], tam[pasos[f["de"]]["tipo"]], pts,
+                            geo["pasos"][f["a"]][:2], tam[pasos[f["a"]]["tipo"]])
+        aire = 8 + (dm.ALTO_ETIQUETA_FLUJO / 2 + AIRE_ETIQUETA if f.get("etiqueta") else 0)
+        for (x1, y1), (x2, y2) in zip(camino, camino[1:]):
+            if abs(y1 - y2) <= 1:
+                ocupa(y1 - aire, y1 + aire)
+    bandas = []   # (desde, hasta) vacíos que se quitan
+    for c, (y0, h) in carriles:
+        if not ocupado[c]:
+            continue
+        lo, hi = min(a for a, _ in ocupado[c]), max(b for _, b in ocupado[c])
+        sobra_arriba = (lo - y0) - (26 + SOBRA_CARRIL)
+        sobra_abajo = (y0 + h - hi) - SOBRA_CARRIL
+        quitar = max(0.0, sobra_arriba) + max(0.0, sobra_abajo)
+        quitar = min(quitar, h - ALTO_MINIMO) if h > ALTO_MINIMO else 0
+        if quitar < 12:
+            continue
+        arriba = min(max(0.0, sobra_arriba), quitar)
+        if arriba >= 1:
+            bandas.append((y0 + 26 + SOBRA_CARRIL / 2, y0 + 26 + SOBRA_CARRIL / 2 + arriba))
+        if quitar - arriba >= 1:
+            bandas.append((y0 + h - (quitar - arriba), y0 + h))
+    if not bandas:
+        return 0
+
+    def nueva(y):
+        menos = 0.0
+        for a, b in bandas:
+            if y >= b:
+                menos += b - a
+            elif y > a:
+                menos += y - a
+        return y - menos
+
+    geo["carriles"] = {c: (nueva(y0), nueva(y0 + h) - nueva(y0)) for c, (y0, h) in geo["carriles"].items()}
+    geo["pasos"] = {pid: (v[0], nueva(v[1]), *v[2:]) for pid, v in geo["pasos"].items()}
+    geo["flujos"] = [[(x, nueva(y)) for x, y in pts] for pts in geo["flujos"]]
+    geo["anotaciones"] = [(x, nueva(y), w, h) for x, y, w, h in geo.get("anotaciones") or []]
+    return sum(b - a for a, b in bandas)
 
 
 def aviso_ancho(ancho):

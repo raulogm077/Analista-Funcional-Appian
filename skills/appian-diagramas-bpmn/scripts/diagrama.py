@@ -9,9 +9,14 @@ Uso:
   diagrama.py png X.drawio                                  vuelve a generar X.png
   diagrama.py bpmn X.drawio [-o X.bpmn]                     exporta BPMN 2.0 con posiciones
   diagrama.py validar proceso.json                          solo valida el JSON
+  diagrama.py importar X.vsdx|X.bpmn [-o X.json]            el proceso de un Visio o un BPMN, en JSON
+  diagrama.py comparar X.drawio --con referencia            qué cambia respecto al aprobado (.json, .drawio, .vsdx, .bpmn)
+
+Un JSON con «paginas» (un proceso por pestaña) da un solo .drawio con una pestaña por fase y un PNG por pestaña
+(X-1.png, X-2.png…); las demás órdenes trabajan entonces sobre todas las pestañas (ver pestanas.py).
 
 Junto a cada X.drawio viven X.png (para el documento; X-1.png, X-2.png… si está en tramos) y X.json (el proceso según
-el análisis; lo escribe esta herramienta, no se edita a mano). Códigos de salida: 0 bien, 1 error o cambios pendientes,
+el análisis; lo escribe esta herramienta, no se edita a mano). Códigos de salida: 0 bien, 1 error, 3 cambios hechos a mano sin aceptar,
 2 falta un requisito: sin navegador se escribe todo menos el PNG («sin PNG»).
 """
 import argparse, json, os, pathlib, re, sys
@@ -54,7 +59,7 @@ def _limpio(proc, geo=None):
     se pide, con posiciones."""
     pasos = []
     for p in proc["pasos"]:
-        q = {**{k: p[k] for k in ("id", "tipo", "carril", "nombre")}, **dm.datos_json(p, dm.DATOS_PASO)}
+        q = {**{k: p.get(k, "") for k in ("id", "tipo", "carril", "nombre")}, **dm.datos_json(p, dm.DATOS_PASO)}
         if geo is not None and p["id"] in geo["pasos"]:
             q["posicion"] = [round(v) for v in geo["pasos"][p["id"]][:2]]
         pasos.append(q)
@@ -79,12 +84,15 @@ def _limpio(proc, geo=None):
     return out
 
 
-def _escribir_json(proc, ruta, drawio=None, automatica=False):
+def _escribir_json(proc, ruta, drawio=None, automatica=False, motor=None):
     """Guarda el proceso que conoce el análisis. Si la colocación la acaba de hacer esta herramienta,
-    guarda también su huella: mientras nadie mueva nada en draw.io, se podrá recolocar entero sin perder trabajo."""
+    guarda también su huella: mientras nadie mueva nada en draw.io, se podrá recolocar entero sin perder trabajo. Si se
+    pidió una colocación (--colocacion mermaid o capas), la guarda para que la siguiente la repita."""
     datos = _limpio(proc)
     if drawio is not None:
         datos["colocacion"] = {"modo": "automatica", "huella": dm.Fichero(str(drawio)).huella()} if automatica else {"modo": "manual"}
+        if motor and motor != "auto":
+            datos["colocacion"]["motor"] = motor
     dm.escribir_texto(ruta, _json_compacto(datos))
 
 
@@ -206,22 +214,50 @@ def _geometria_por_posiciones(proc):
     return geo
 
 
-def _motor(procs, por_capas=False):
-    """Geometría ajustada de cada proceso: la del motor de Mermaid o, sin navegador (o si se pide), la colocación por
-    capas, que no necesita navegador y mide lo que se espera (la de los tramos)."""
+COLOCACIONES = ("auto", "mermaid", "capas")
+
+
+def defectos_colocacion(proc, geo):
+    """Lo que hace difícil de leer una colocación, para elegir entre dos: (cruces de flujos + 2 por cada flujo que va
+    hacia la izquierda sin ser una vuelta atrás, ancho). Menos es mejor."""
+    _, atras = colocacion.capas(proc)
+    pos = geo["pasos"]
+    izquierda = sum(1 for i, f in enumerate(proc["flujos"])
+                    if i not in atras and f["de"] in pos and f["a"] in pos and pos[f["a"]][0] < pos[f["de"]][0] - 20)
+    return colocacion.cruces(proc, geo) + 2 * izquierda, geo["ancho"]
+
+
+def _motor(procs, por_capas=False, modo="auto"):
+    """Geometría ajustada de cada proceso. Con «auto» (lo normal) se colocan de las dos maneras, con el motor de
+    Mermaid y por capas, y se queda la que menos se cruza y menos va hacia atrás (si empatan, la de Mermaid). Sin
+    navegador, o con «capas», solo por capas; con «mermaid», solo Mermaid. Cada geometría lleva en «modo» la elegida."""
     eventos = dm.FORMAS_EVENTO
-    geos = None
-    if not por_capas:
+    if por_capas:
+        modo = "capas"
+    mermaid = None
+    if modo != "capas":
         try:
-            geos = navegador.colocar_varios(procs, eventos, dm.PUERTAS, dm.CABECERA)
+            mermaid = navegador.colocar_varios(procs, eventos, dm.PUERTAS, dm.CABECERA)
         except navegador.SinNavegador:
-            pass
-    if geos is None:
-        geos = [colocacion.por_capas(p, eventos, dm.PUERTAS, dm.CABECERA) for p in procs]
-    return [colocacion.ajustar(p, g, dm.TAM, eventos, dm.PUERTAS, dm.CABECERA) for p, g in zip(procs, geos)]
+            if modo == "mermaid":
+                raise
+    salida = []
+    for i, p in enumerate(procs):
+        opciones = []
+        if mermaid is not None:
+            opciones.append(("mermaid", colocacion.ajustar(p, mermaid[i], dm.TAM, eventos, dm.PUERTAS,
+                                                             dm.CABECERA)))
+        if mermaid is None or modo == "auto":
+            opciones.append(("capas", colocacion.ajustar(p, colocacion.por_capas(p, eventos, dm.PUERTAS,
+                                                                                              dm.CABECERA),
+                                                           dm.TAM, eventos, dm.PUERTAS, dm.CABECERA)))
+        nombre, geo = min(opciones, key=lambda o: defectos_colocacion(p, o[1]))
+        geo["modo"] = nombre
+        salida.append(geo)
+    return salida
 
 
-def _colocar(proc, posiciones=True):
+def _colocar(proc, posiciones=True, modo="auto"):
     """Las páginas del dibujo, [(proceso, geometría)]: una o, si el proceso lleva «tramos» y no cabe en una página, una
     por tramo. La geometría, la del motor (o la de las posiciones dadas) ajustada para que nada se pise."""
     cabe = lambda geo: geo["ancho"] <= colocacion.ANCHO_LEGIBLE      # noqa: E731
@@ -231,7 +267,7 @@ def _colocar(proc, posiciones=True):
             return [(proc, geo)]
     if not proc.get("tramos") or \
             colocacion.ancho_estimado(proc, dm.EVENTOS, dm.PUERTAS, dm.CABECERA) <= colocacion.ANCHO_LEGIBLE:
-        geo = _motor([proc])[0]
+        geo = _motor([proc], modo=modo)[0]
         if not proc.get("tramos") or cabe(geo):
             return [(proc, geo)]
     # en tramos, siempre por capas: el motor de Mermaid coloca los cortes de forma irregular y no se sabe lo que medirá
@@ -260,14 +296,31 @@ def crear(a):
         print(f"ERROR: {destino} ya existe. Para cambiarlo usa «actualizar» (respeta lo editado a mano) "
               "o repite con --forzar para rehacerlo entero.", file=sys.stderr)
         return 1
-    paginas = _colocar(proc)
+    paginas = _colocar(proc, modo=getattr(a, "colocacion", "auto"))
     drawio, png, js = _rutas(destino)
+    antes = drawio.read_bytes() if drawio.exists() else None
     dm.escribir_paginas(paginas, drawio)
-    _escribir_json(proc, js, drawio, automatica=True)
-    print(f"OK {drawio}" + (f" ({len(paginas)} tramos)" if len(paginas) > 1 else "") + f"\n   {js}")
+    try:
+        _escribir_json(proc, js, drawio, automatica=True, motor=getattr(a, "colocacion", "auto"))
+    except OSError as e:     # sin su .json, el .drawio no se podría actualizar: se deja como estaba
+        drawio.write_bytes(antes) if antes is not None else drawio.unlink()
+        print(f"ERROR: no se pudo guardar {js} ({e.strerror}); {drawio} se deja como estaba.", file=sys.stderr)
+        return 1
+    modo = paginas[0][1].get("modo")
+    print(f"OK {drawio}" + (f" ({len(paginas)} tramos)" if len(paginas) > 1 else "")
+          + (f" (colocado {'con Mermaid' if modo == 'mermaid' else 'por capas'})" if modo else "") + f"\n   {js}")
     for linea in _tramos(drawio):
         print(linea)
+    _listar_supuestos(proc)
     return 0 if _imagen(drawio) else 2
+
+
+def _listar_supuestos(proc):
+    lineas = dm.supuestos(proc)
+    if lineas:
+        print(f"supuestos ({len(lineas)}), para confirmar con el usuario:")
+        for linea in lineas:
+            print(f"  - {linea}")
 
 
 # ---------------------------------------------------------------- edición del .drawio
@@ -383,9 +436,9 @@ class Editor:
             padre = ultimo.get("parent")
             gy = float(ultimo.find("mxGeometry").get("y", 0)) + h
             gx = float(ultimo.find("mxGeometry").get("x", 0))
-            estilo = ultimo.get("style") or dm.ESTILO_CARRIL
+            estilo = dm.estilo_carril(len(ultimos) + 1, nombre)
         else:
-            padre, gx, gy, w, estilo = "1", 0.0, 0.0, 800.0, dm.ESTILO_CARRIL
+            padre, gx, gy, w, estilo = "1", 0.0, 0.0, 800.0, dm.estilo_carril(1, nombre)
         if self.geo.get("externos"):   # los participantes externos, debajo de los carriles, bajan para hacer sitio
             self.desplazar_abajo(gy, dm.ALTO_CARRIL)
         nuevo_id = self._id_libre("carril-")
@@ -429,16 +482,34 @@ class Editor:
             if el.get("id") in quitar:
                 self.f.root.remove(el)
 
+    def poner_adorno(self, pid, tipo):
+        """Deja el pictograma de la tarjeta de `pid` según su tipo: lo quita si ya no es una tarea, o si la tarea no
+        tiene el aspecto de tarjeta (un .drawio de antes, con el marcador BPMN), y lo pone o cambia si lo es."""
+        for el, cell in list(self.f.celdas()):
+            if cell.get("parent") == pid and dm.es_adorno(cell):
+                self.f.root.remove(el)
+        _, cell = self._cell(pid)
+        adorno = dm.adorno_tarea(pid, tipo)
+        if adorno and dm._estilo(cell.get("style")).get("tipo") == tipo:
+            at, g = adorno
+            c = ET.SubElement(self.f.root, "mxCell", at)
+            ET.SubElement(c, "mxGeometry", g)
+
     def cambiar_paso(self, pid, nuevo, antes):
         el, cell = self._cell(pid)
-        if nuevo.get("nombre", "") != antes["nombre"]:
-            self.f.poner_etiqueta(el, cell, nuevo.get("nombre", ""))
+        if nuevo.get("nombre", "") != antes["nombre"] or nuevo["tipo"] != antes["tipo"]:
+            self.f.poner_etiqueta(el, cell, dm.etiqueta_paso(nuevo["tipo"], nuevo.get("nombre", "")))
+            letra = dm._estilo(cell.get("style")).get("fontSize")
+            if nuevo["tipo"] == antes["tipo"] in dm.TAREAS and letra in ("11", "10", "9"):   # la de la herramienta
+                cell.set("style", cell.get("style").replace(f"fontSize={letra};",
+                                                            f"fontSize={dm.letra_tarea(nuevo.get('nombre'))};", 1))
         if nuevo["tipo"] != antes["tipo"]:
             cx, cy = self.centro(pid)
             cell.set("style", dm.ESTILO[nuevo["tipo"]])
             w, h = dm.TAM[nuevo["tipo"]]
             g = cell.find("mxGeometry"); g.set("width", str(w)); g.set("height", str(h))
             self.poner_centro(pid, cx, cy)
+            self.poner_adorno(pid, nuevo["tipo"])
         if nuevo["carril"] != antes["carril"]:
             cx, _ = self.centro(pid)
             x, y, w, h = self.carril_caja(nuevo["carril"])
@@ -447,6 +518,8 @@ class Editor:
             self._limpiar_puntos(pid)
         if dm.datos(nuevo, dm.DATOS_PASO) != dm.datos(antes, dm.DATOS_PASO):
             self.f.poner_datos(el, cell, nuevo, dm.DATOS_PASO)
+        if bool(nuevo.get("supuesto")) != bool(antes.get("supuesto")):
+            cell.set("style", dm.con_supuesto(cell.get("style") or "", nuevo))
 
     def contornos(self):
         """El borde de cada evento que puede ir en el de una tarea según donde va ahora (dm.contornos), tras cambiar
@@ -516,10 +589,12 @@ class Editor:
             cy = self._fila_libre(p["carril"], cx)
         w, h = dm.TAM[p["tipo"]]
         lx, ly = self._origen(self.carril_id(p["carril"]))
-        _, cell = self.f.nueva_celda(p["id"], p.get("nombre", ""), {"style": dm.ESTILO[p["tipo"]], "vertex": "1",
-                                                                     "parent": self.carril_id(p["carril"])}, dm.DATOS_PASO, p)
+        _, cell = self.f.nueva_celda(p["id"], dm.etiqueta_paso(p["tipo"], p.get("nombre", "")),
+                                     {"style": dm.ESTILO[p["tipo"]], "vertex": "1", "parent": self.carril_id(p["carril"])},
+                                     dm.DATOS_PASO, p)
         ET.SubElement(cell, "mxGeometry", {"x": f"{cx - lx - w / 2:.0f}", "y": f"{cy - ly - h / 2:.0f}",
                                            "width": str(w), "height": str(h), "as": "geometry"})
+        self.poner_adorno(p["id"], p["tipo"])
         self.recargar()
 
     def _ensanchar(self, dx):
@@ -594,6 +669,18 @@ class Editor:
             lado = otro
         arriba = lado == "arriba"
         ny = arriba_de(lado)
+        # si aun así roza un paso vecino, se aparta un poco de su paso; si para eso tiene que irse lejos (los dos
+        # lados están ocupados), se queda junto a su paso, que es lo que se entiende al leerlo
+        sitio = ny
+        for _ in range(4):
+            pisa = [(by, bh) for bx, by, bw, bh in cajas
+                    if nx < bx + bw and bx < nx + ancho and sitio < by + bh and by < sitio + alto]
+            if not pisa:
+                break
+            sitio = (min(by for by, _ in pisa) - colocacion.NOTA_HUECO - alto if arriba
+                     else max(by + bh for by, bh in pisa) + colocacion.NOTA_HUECO)
+        if not pisa and abs(sitio - ny) <= 2 * colocacion.NOTA_HUECO and y + 4 <= sitio and sitio + alto <= y + hc - 4:
+            ny = sitio
         nid = self._id_libre("NOTA-")
         cell = ET.SubElement(self.f.root, "mxCell", {"id": nid, "value": n.get("texto", ""), "style": dm.ESTILO_NOTA,
                                                      "vertex": "1", "parent": self.carril_id(paso["carril"])})
@@ -652,7 +739,8 @@ class Editor:
                 for e, c in list(self.f.celdas()):  # etiquetas sueltas del flujo: se sustituyen por la etiqueta
                     if c.get("parent") == el.get("id") and c.get("vertex") == "1":
                         self.f.root.remove(e)
-                self.f.poner_etiqueta(el, cell, f.get("etiqueta", ""))
+                color = None if mensaje else dm._estilo(cell.get("style")).get("strokeColor")
+                self.f.poner_etiqueta(el, cell, dm.etiqueta_flujo(f.get("etiqueta", ""), color))
                 self.f.poner_datos(el, cell, f, dm.DATOS_FLUJO)
                 if mensaje:
                     return
@@ -670,7 +758,8 @@ class Editor:
         while f"F{n:02d}" in usados:
             n += 1
         estilo = dm.ESTILO_MENSAJE if mensaje else dm.estilo_flujo(f)
-        _, cell = self.f.nueva_celda(f"F{n:02d}", f.get("etiqueta", ""), {"style": estilo, "edge": "1", "parent": "1",
+        etiqueta = dm.etiqueta_flujo(f.get("etiqueta", ""), None if mensaje else dm._estilo(estilo).get("strokeColor"))
+        _, cell = self.f.nueva_celda(f"F{n:02d}", etiqueta, {"style": estilo, "edge": "1", "parent": "1",
                                                                           "source": de, "target": a}, dm.DATOS_FLUJO, f)
         ET.SubElement(cell, "mxGeometry", {"relative": "1", "as": "geometry"})
 
@@ -781,12 +870,17 @@ def aplicar(editor, nuevo):
 
 
 def recolocar(editor, nuevo, drawio):
-    """Vuelve a colocar todo el diagrama (nadie lo ha movido a mano), conservando el estilo de lo que ya existía. Las
-    páginas del proceso (una, o una por tramo) se sustituyen por las nuevas; las demás no se tocan."""
-    antes = {el.get("id"): cell.get("style") for el, cell in editor.f.celdas()}
+    """Vuelve a colocar todo el diagrama (nadie lo ha movido a mano), conservando el estilo de lo que ya existía (si ya
+    tenía el aspecto actual; uno de antes pasa al actual). Las páginas del proceso (una, o una por tramo) se sustituyen
+    por las nuevas; las demás no se tocan."""
+    # lo que alguien retocó (colores…) se conserva; un .drawio de un aspecto de antes (sin la marca aspecto=lamina) pasa al nuevo
+    if dm.aspecto_actual(editor.f):
+        antes = {el.get("id"): cell.get("style") for el, cell in editor.f.celdas()}
+    else:
+        antes = {}
     tipos_antes = {p["id"]: p["tipo"] for p in editor.proc["pasos"]}
     carril_estilo = {n: antes.get(g[4]) for n, g in editor.geo["carriles"].items()}
-    paginas = _colocar(nuevo, posiciones=False)
+    paginas = _colocar(nuevo, posiciones=False, modo=getattr(editor, "modo", "auto"))
     lados = {pid: lado for _, geo in paginas for pid, lado in geo.get("etiquetas", {}).items()}
     editor.f.poner_paginas(dm.diagramas(paginas))
     tipo_nuevo = {p["id"]: p["tipo"] for p in nuevo["pasos"]}
@@ -795,7 +889,13 @@ def recolocar(editor, nuevo, drawio):
         if cid in tipos_antes and tipo_nuevo.get(cid) == tipos_antes[cid] and antes.get(cid):
             # el lado de la etiqueta y el borde de un evento que puede ir en el de una tarea son los nuevos
             contorno = dm._estilo(cell.get("style")).get("outline") if tipo_nuevo[cid] in dm.BORDE else None
-            cell.set("style", dm.con_contorno(dm.con_lado(antes[cid], lados.get(cid)), contorno))
+            estilo = dm.con_contorno(dm.con_lado(antes[cid], lados.get(cid)), contorno)
+            estilo = dm.con_supuesto(estilo, next(p for p in nuevo["pasos"] if p["id"] == cid))
+            letra = dm._estilo(estilo).get("fontSize")
+            if tipo_nuevo[cid] in dm.TAREAS and letra in ("11", "10", "9"):   # la letra que puso la herramienta, no a mano
+                paso = next(p for p in nuevo["pasos"] if p["id"] == cid)
+                estilo = estilo.replace(f"fontSize={letra};", f"fontSize={dm.letra_tarea(paso.get('nombre'))};", 1)
+            cell.set("style", estilo)
         if cell.get("vertex") == "1" and "swimlane" in (cell.get("style") or "") and carril_estilo.get(cell.get("value")):
             cell.set("style", carril_estilo[cell.get("value")])
     editor.recargar()
@@ -812,7 +912,7 @@ def actualizar(a):
                 print(f"ERROR: {drawio.name} tiene cambios hechos a mano que el análisis aún no recoge.\n"
                       f"Revísalos con: diagrama.py comparar {drawio}\n"
                       "y, cuando el análisis los recoja, acéptalos con --aceptar. (--forzar los pisa.)", file=sys.stderr)
-                return 1
+                return CAMBIOS_A_MANO
     else:
         base = _limpio(ed.proc)
     cambios = dm.cargar_json(a.cambios)
@@ -820,6 +920,7 @@ def actualizar(a):
     if not _informe_validacion(nuevo):
         return 1
     colocacion_antes = base.get("colocacion") or {}
+    pedida = getattr(a, "colocacion", "auto")
     automatica = a.recolocar or (colocacion_antes.get("modo") == "automatica"
                                  and colocacion_antes.get("huella") == ed.f.huella())
     if not automatica and ed.f.en_tramos:
@@ -827,8 +928,9 @@ def actualizar(a):
               "encajo cambios en tramos colocados a mano sin descolocarlos. Haz el cambio en draw.io y después "
               "«comparar --aceptar», o repite con --recolocar para colocar de nuevo todos los tramos (se pierde lo "
               "colocado a mano).", file=sys.stderr)
-        return 1
+        return CAMBIOS_A_MANO
     if automatica:
+        ed.modo = pedida if pedida != "auto" else colocacion_antes.get("motor", "auto")
         avisos = recolocar(ed, nuevo, drawio)
     else:
         avisos = aplicar(ed, nuevo)
@@ -849,13 +951,15 @@ def actualizar(a):
         provisional.unlink(missing_ok=True)
     for av in avisos:
         print(f"aviso: {av}")
-    _escribir_json(nuevo, js, drawio, automatica=automatica)
+    _escribir_json(nuevo, js, drawio, automatica=automatica,
+                   motor=pedida if pedida != "auto" else colocacion_antes.get("motor"))
     cambios_hechos = dm.comparar(base, nuevo)
     print(f"OK {drawio} ({len(cambios_hechos)} cambios)")
     for _, t in cambios_hechos:
         print(f"  - {t}")
     for linea in _tramos(drawio):
         print(linea)
+    _listar_supuestos(nuevo)
     return 0 if _imagen(drawio) else 2
 
 
@@ -868,7 +972,62 @@ def leer(a):
     return 0
 
 
+def comparar_con(a):
+    """Compara el diagrama con una referencia (el diagrama aprobado), sin tocar nada: una línea por diferencia."""
+    import importar
+    proc, _, avisos = dm.leer(a.drawio)
+    ref, avisos_ref = importar.referencia(a.con, proc.get("proceso"))
+    dif = importar.cotejar(proc, ref)
+    if a.json:
+        print(json.dumps({"diferencias": [{"clase": c, "texto": t} for c, t in dif], "avisos": avisos + avisos_ref},
+                         ensure_ascii=False, indent=1))
+        return 0
+    for av in avisos + avisos_ref:
+        print(f"aviso: {av}")
+    if not dif:
+        print(f"Igual que {pathlib.Path(a.con).name}: los mismos pasos, carriles y flujos.")
+    titulos = {"error": "Errores (perfil equivocado, paso o flujo que falta)", "forma": "Diferencias de forma",
+               "añadido": "Añadido en el diagrama (de fuentes posteriores o de más)"}
+    for clase, titulo in titulos.items():
+        lineas = [t for c, t in dif if c == clase]
+        if lineas:
+            print(f"{titulo}: {len(lineas)}")
+            for t in lineas:
+                print(f"  - {t}")
+    return 0
+
+
+def importar(a):
+    import importar as imp
+    proc, avisos = imp.importar(a.fichero)
+    destino = pathlib.Path(a.o) if a.o else pathlib.Path(a.fichero).with_suffix(".json")
+    if destino.suffix != ".json":
+        destino = destino / (pathlib.Path(a.fichero).stem + ".json")
+    if destino.exists() and not a.forzar:
+        print(f"ERROR: {destino} ya existe; repite con --forzar para reescribirlo.", file=sys.stderr)
+        return 1
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    if "paginas" in proc:
+        import pestanas
+        pestanas._escribir_libro(proc, destino)
+        procs = proc["paginas"]
+    else:
+        dm.escribir_texto(destino, _json_compacto(proc))
+        procs = [proc]
+    for av in avisos:
+        print(f"aviso: {av}")
+    for p in procs:
+        err, av = dm.validar(p)
+        for e in err + av:
+            print(f"aviso: {p['proceso']}: {e}")
+    print(f"OK {destino} ({sum(len(p['pasos']) for p in procs)} pasos"
+          + (f" en {len(procs)} pestañas" if len(procs) > 1 else "") + "). Repásalo y dibújalo con «crear».")
+    return 0
+
+
 def comparar(a):
+    if getattr(a, "con", None):
+        return comparar_con(a)
     drawio, png, js = _rutas(a.drawio)
     ed = Editor(drawio)
     base = dm.cargar_json(js) if js.exists() else None
@@ -891,12 +1050,15 @@ def comparar(a):
             ed.renombrar_id(viejo, nuevo_id)
             el, cell = ed._cell(nuevo_id)
             estilo = cell.get("style") or ""
-            if "mxgraph.bpmn" not in estilo:  # rectángulo, rombo o círculo de draw.io: se le da la forma BPMN
+            if "mxgraph.bpmn" not in estilo and "tipo=" not in estilo:
+                # rectángulo, rombo o círculo de draw.io: se le da la forma (y, si es una tarea, la tarjeta) de la skill
                 cx, cy = ed.centro(nuevo_id)
                 cell.set("style", dm.ESTILO[tipos[viejo]])
                 w, h = dm.TAM[tipos[viejo]]
                 g = cell.find("mxGeometry"); g.set("width", str(w)); g.set("height", str(h))
                 ed.poner_centro(nuevo_id, cx, cy)
+                ed.f.poner_etiqueta(el, cell, dm.etiqueta_paso(tipos[viejo], ed.f.etiqueta(el, cell)))
+                ed.poner_adorno(nuevo_id, tipos[viejo])
         ed.f.guardar()
         ed.recargar()
     avisos = list(ed.avisos)
@@ -928,10 +1090,10 @@ def comparar(a):
         # un paso renombrado a mano cambia el nombre de la página de su tramo, y un dato o un flujo, el borde de un evento
         if dm.renombrar_tramos(ed.f, aceptado) | ed.contornos():
             ed.f.guardar()
-        _escribir_json(aceptado, js, drawio, automatica=sigue_auto)
+        _escribir_json(aceptado, js, drawio, automatica=sigue_auto, motor=antes.get("motor"))
         print(f"Aceptado: {js.name} actualizado.")
         return 0 if _imagen(drawio) else 2
-    return 1 if dif else 0
+    return CAMBIOS_A_MANO if dif else 0
 
 
 def png(a):
@@ -957,19 +1119,60 @@ def bpmn(a):
     return 0
 
 
+CAMBIOS_A_MANO = 3   # código de salida: hay cambios hechos a mano en draw.io que el análisis no recoge
+
+
+class _SalidaSegura:
+    """La salida estándar, que no se cae si quien la lee la cierra antes (`| head`): sin ella, un BrokenPipeError
+    a mitad de `crear` dejaba el .drawio escrito y el PNG sin hacer."""
+
+    def __init__(self, flujo):
+        self._flujo, self._cerrada = flujo, False
+
+    def write(self, texto):
+        if not self._cerrada:
+            try:
+                return self._flujo.write(texto)
+            except (BrokenPipeError, OSError):
+                self._cerrada = True
+        return len(texto)
+
+    def flush(self):
+        if not self._cerrada:
+            try:
+                self._flujo.flush()
+            except (BrokenPipeError, OSError):
+                self._cerrada = True
+
+    def __getattr__(self, nombre):
+        return getattr(self._flujo, nombre)
+
+
 def main():
     _salida_utf8()
+    sys.stdout = _SalidaSegura(sys.stdout)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="orden", required=True)
-    s = sub.add_parser("crear"); s.add_argument("proceso"); s.add_argument("-o"); s.add_argument("--forzar", action="store_true"); s.set_defaults(fn=crear)
+    s = sub.add_parser("crear"); s.add_argument("proceso"); s.add_argument("-o"); s.add_argument("--forzar", action="store_true")
+    s.add_argument("--colocacion", choices=COLOCACIONES, default="auto"); s.set_defaults(fn=crear)
     s = sub.add_parser("actualizar"); s.add_argument("drawio"); s.add_argument("cambios"); s.add_argument("--forzar", action="store_true")
-    s.add_argument("--recolocar", action="store_true"); s.set_defaults(fn=actualizar)
+    s.add_argument("--recolocar", action="store_true"); s.add_argument("--colocacion", choices=COLOCACIONES, default="auto")
+    s.set_defaults(fn=actualizar)
     s = sub.add_parser("leer"); s.add_argument("drawio"); s.add_argument("--posiciones", action="store_true"); s.set_defaults(fn=leer)
-    s = sub.add_parser("comparar"); s.add_argument("drawio"); s.add_argument("--aceptar", action="store_true"); s.add_argument("--json", action="store_true"); s.set_defaults(fn=comparar)
+    s = sub.add_parser("comparar"); s.add_argument("drawio"); s.add_argument("--aceptar", action="store_true"); s.add_argument("--json", action="store_true")
+    s.add_argument("--con", help="una referencia (.json, .drawio, .vsdx o .bpmn): qué cambia respecto a ella"); s.set_defaults(fn=comparar)
+    s = sub.add_parser("importar"); s.add_argument("fichero"); s.add_argument("-o"); s.add_argument("--forzar", action="store_true")
+    s.set_defaults(fn=importar)
     s = sub.add_parser("png"); s.add_argument("drawio"); s.set_defaults(fn=png)
     s = sub.add_parser("bpmn"); s.add_argument("drawio"); s.add_argument("-o"); s.set_defaults(fn=bpmn)
     s = sub.add_parser("validar"); s.add_argument("proceso"); s.set_defaults(fn=validar)
     a = ap.parse_args()
+    import pestanas
+    libro = pestanas.es_libro_json(a.proceso) if a.orden in ("crear", "validar") else \
+        pestanas.es_libro_drawio(a.drawio) if hasattr(a, "drawio") else False
+    if libro:          # un .drawio con una pestaña por fase: la misma orden en cada pestaña
+        uno = a.fn
+        a.fn = pestanas.leer if a.orden == "leer" else (lambda a: getattr(pestanas, a.orden)(a, uno))
     try:
         sys.exit(a.fn(a))
     except navegador.SinNavegador as e:
