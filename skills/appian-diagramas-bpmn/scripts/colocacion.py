@@ -1270,8 +1270,92 @@ def ajustar(proc, geo, tam, eventos, puertas, cabecera):
         enrutado.columnas_rectas(proc, geo, tam, cabecera)
         enrutado.salir_por_lado_libre(proc, geo, tam, cabecera)
         enrutado.separar_pegados(proc, geo, tam, cabecera)
+    compactar_carriles(proc, geo, tam, eventos, puertas)
     colocar_externos(proc, geo)
     return geo
+
+
+SOBRA_CARRIL = 24   # hueco vacío que se deja arriba (bajo el nombre del carril) y abajo de lo que ocupa un carril
+ALTO_MINIMO = 26 + 96 + 2 * MARGEN   # un carril con una fila de tareas, bajo su nombre
+
+
+def compactar_carriles(proc, geo, tam, eventos, puertas):
+    """Quita el hueco vacío de arriba y de abajo de cada carril, que queda cuando el motor reserva sitio que al final
+    no usa nada. Ocupa lo que hay en el carril: las formas con el nombre de su evento o su puerta, las notas y los
+    tramos horizontales de los flujos con su etiqueta; un tramo vertical no ocupa, se acorta. Todo lo que queda debajo
+    de un hueco que se quita sube lo mismo, así que nada se cruza ni se pisa de nuevo. Devuelve los px que quita."""
+    import drawio_modelo as dm
+    carriles = sorted(geo["carriles"].items(), key=lambda kv: kv[1][0])
+    ocupado = {c: [] for c, _ in carriles}
+
+    def carril_de(y):
+        return next((c for c, (y0, h) in carriles if y0 <= y < y0 + h), None)
+
+    def ocupa(y0, y1, carril=None):
+        c = carril or carril_de((y0 + y1) / 2)
+        if c in ocupado:
+            ocupado[c].append((y0, y1))
+
+    pasos = {p["id"]: p for p in proc["pasos"]}
+    for pid, (cx, cy, *_) in geo["pasos"].items():
+        p = pasos.get(pid)
+        if p is None:
+            continue
+        h = tam[p["tipo"]][1]
+        arriba, abajo = cy - h / 2, cy + h / 2
+        if p["tipo"] in eventos | puertas and p.get("nombre"):
+            alto = alto_texto(p["nombre"]) + 2
+            if geo.get("etiquetas", {}).get(pid) == "arriba":
+                arriba -= alto
+            else:
+                abajo += alto
+        ocupa(arriba, abajo, p["carril"] if p["carril"] in ocupado else None)
+    for nota, (_, y, _, h) in zip(proc.get("notas") or [], geo.get("anotaciones") or []):
+        carril = pasos.get(nota["paso"], {}).get("carril")
+        ocupa(y, y + h, carril if carril in ocupado else None)
+    externos = set(proc.get("externos") or [])
+    for i, (f, pts) in enumerate(zip(proc["flujos"], geo["flujos"])):
+        if f["de"] in externos or f["a"] in externos or f["de"] not in geo["pasos"] or f["a"] not in geo["pasos"]:
+            continue
+        camino = dm._camino(geo["pasos"][f["de"]][:2], tam[pasos[f["de"]]["tipo"]], pts,
+                            geo["pasos"][f["a"]][:2], tam[pasos[f["a"]]["tipo"]])
+        aire = 8 + (dm.ALTO_ETIQUETA_FLUJO / 2 + AIRE_ETIQUETA if f.get("etiqueta") else 0)
+        for (x1, y1), (x2, y2) in zip(camino, camino[1:]):
+            if abs(y1 - y2) <= 1:
+                ocupa(y1 - aire, y1 + aire)
+    bandas = []   # (desde, hasta) vacíos que se quitan
+    for c, (y0, h) in carriles:
+        if not ocupado[c]:
+            continue
+        lo, hi = min(a for a, _ in ocupado[c]), max(b for _, b in ocupado[c])
+        sobra_arriba = (lo - y0) - (26 + SOBRA_CARRIL)
+        sobra_abajo = (y0 + h - hi) - SOBRA_CARRIL
+        quitar = max(0.0, sobra_arriba) + max(0.0, sobra_abajo)
+        quitar = min(quitar, h - ALTO_MINIMO) if h > ALTO_MINIMO else 0
+        if quitar < 12:
+            continue
+        arriba = min(max(0.0, sobra_arriba), quitar)
+        if arriba >= 1:
+            bandas.append((y0 + 26 + SOBRA_CARRIL / 2, y0 + 26 + SOBRA_CARRIL / 2 + arriba))
+        if quitar - arriba >= 1:
+            bandas.append((y0 + h - (quitar - arriba), y0 + h))
+    if not bandas:
+        return 0
+
+    def nueva(y):
+        menos = 0.0
+        for a, b in bandas:
+            if y >= b:
+                menos += b - a
+            elif y > a:
+                menos += y - a
+        return y - menos
+
+    geo["carriles"] = {c: (nueva(y0), nueva(y0 + h) - nueva(y0)) for c, (y0, h) in geo["carriles"].items()}
+    geo["pasos"] = {pid: (v[0], nueva(v[1]), *v[2:]) for pid, v in geo["pasos"].items()}
+    geo["flujos"] = [[(x, nueva(y)) for x, y in pts] for pts in geo["flujos"]]
+    geo["anotaciones"] = [(x, nueva(y), w, h) for x, y, w, h in geo.get("anotaciones") or []]
+    return sum(b - a for a, b in bandas)
 
 
 def aviso_ancho(ancho):

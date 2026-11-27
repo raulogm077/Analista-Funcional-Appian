@@ -16,7 +16,7 @@ Esta skill es dueña del dibujo de los procesos y de su formato. El contenido (q
 3. **Escribe el JSON** del proceso («Formato del proceso») con las reglas de `references/buen-proceso.md`. Lo que no dice ninguna fuente va en `supuesto`. Si tiene fases que el cliente ve por separado, una pestaña por fase (`paginas`, en `references/formato.md`).
 4. **`validar` y `crear`** («Órdenes»). Corrige los avisos de estructura antes de entregar.
 5. **Mira el PNG.** Si algo queda apretado o cruzado, acorta una etiqueta o prueba la otra colocación (`--colocacion`).
-6. **Responde** con las fuentes, los supuestos que listó `crear`, lo pendiente de validar y, por cada puerta, la salida que ninguna fuente explica. Si hay diagrama aprobado, `comparar --con` y da la tabla de diferencias.
+6. **Responde** con las fuentes, los supuestos que listó `crear`, lo pendiente de validar, los avisos que queden sin corregir con el motivo (por ejemplo, el nombre viene así del aprobado) y, por cada puerta, la salida que ninguna fuente explica. Si hay diagrama aprobado, `comparar --con` y da la tabla de diferencias.
 7. **Después:** un cambio del análisis, con `actualizar` («Cambiar un proceso»); lo que se cambie en draw.io con el usuario, con `comparar` («Edición en una reunión»).
 
 ## Ficheros de cada proceso
@@ -135,7 +135,8 @@ Códigos de salida:
 - un participante externo no tiene flujos de mensaje;
 - una tarea tiene varias salidas sin puerta (en BPMN se siguen todas a la vez), una puerta une y divide a la vez o una exclusiva que divide no lleva pregunta;
 - los caminos que abre una paralela o una inclusiva se juntan en algo que no es una puerta del mismo tipo, o los de una exclusiva, en una paralela (que esperaría a todos y pararía el proceso);
-- dos tareas se llaman igual.
+- dos tareas se llaman igual;
+- una nota pasa de unos 150 caracteres.
 
 `crear`, `actualizar` y `png` avisan si el diagrama mide más de 1.600 px de ancho: en una página vertical el texto quedará pequeño. El PNG conserva el doble de resolución del dibujo, también en procesos grandes, para ampliar sin reducir antes su detalle.
 

@@ -116,7 +116,7 @@ def estilo_carril(i, nombre):
 
 # las etiquetas de los flujos, en negrita sobre blanco, del color de la línea
 ESTILO_FLUJO = (f"edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;strokeColor={SECUENCIA};strokeWidth=1.5;"
-                f"endArrow=block;endFill=1;endSize=6;fontColor={SECUENCIA};labelBackgroundColor=#ffffff;"
+                f"endArrow=block;endFill=1;endSize=6;fontColor={SECUENCIA};labelBackgroundColor=none;"
                 + FUENTE)
 # un flujo que vuelve a un paso anterior (a su izquierda): en naranja, para que los reprocesos se vean de un vistazo
 ESTILO_RETORNO = ESTILO_FLUJO.replace(SECUENCIA, RETORNO).replace("strokeWidth=1.5;", "strokeWidth=1.6;")
@@ -158,12 +158,27 @@ def aspecto_actual(f):
 NUEVO_PASO = re.compile(r"\bnuevo\b", re.I)   # «[nuevo paso 8]»: el código de un paso que no existía, resaltado
 
 
+CODIGO_ARRIBA = 14   # caracteres del código del cliente que caben arriba a la derecha, junto al pictograma
+
+
+def codigo_arriba(codigo):
+    """Si el código del cliente («[EJ-01.001]») va arriba a la derecha de la tarjeta: si cabe y no es un paso nuevo
+    (ese va debajo, en su píldora verde)."""
+    return len(codigo) <= CODIGO_ARRIBA and not NUEVO_PASO.search(codigo)
+
+
 def etiqueta_paso(tipo, nombre):
-    """Lo que se escribe en la celda de un paso. En una tarea, el código del cliente va en una línea aparte en
-    monoespaciada (en una píldora verde si dice «nuevo»); leer() lo vuelve a juntar (_texto) y el nombre no cambia."""
+    """Lo que se escribe en la celda de un paso. En una tarea, el código del cliente va en monoespaciada arriba a la
+    derecha, junto al pictograma, o, si no cabe, en una línea aparte debajo del nombre (en una píldora verde si dice
+    «nuevo»); leer() lo vuelve a juntar al final (_texto) y el nombre no cambia."""
     m = CODIGO.match(nombre or "") if tipo in TAREAS else None
     if not m or not m.group(1):
         return nombre or ""
+    if codigo_arriba(m.group(2)):
+        # arriba a la derecha, a la altura del pictograma (el nombre empieza donde siempre); leer() lo pone al final
+        return (f'<div class="codigo" style="text-align:right;margin:-22px 0 8px 24px;line-height:14px;font-family:{MONO};'
+                f'font-size:9px;font-weight:normal;color:{APAGADO}">' + html.escape(m.group(2), quote=False) + "</div>"
+                + html.escape(m.group(1), quote=False))
     if NUEVO_PASO.search(m.group(2)):
         estilo = (f"font-family:{MONO};font-size:9px;font-weight:normal;color:#ffffff;background-color:{NUEVO[0]};"
                   "border-radius:6px;padding:0 4px")
@@ -171,6 +186,15 @@ def etiqueta_paso(tipo, nombre):
         estilo = f"font-family:{MONO};font-size:9px;font-weight:normal;color:{APAGADO}"
     return (html.escape(m.group(1), quote=False) + f'<br><span style="{estilo}">' + html.escape(m.group(2), quote=False)
             + "</span>")
+
+
+def etiqueta_flujo(texto, color=None):
+    """Lo que se escribe en la celda de un flujo: la etiqueta en una píldora blanca con el borde del color de la línea
+    (sin color, la de un mensaje, sin píldora). leer() se queda con el texto (_texto)."""
+    if not texto or not color:
+        return texto or ""
+    return (f'<span style="border:1px solid {color};border-radius:8px;padding:0 4px;background-color:#ffffff">'
+            + html.escape(texto, quote=False) + "</span>")
 
 
 def _uri_svg(svg):
@@ -203,16 +227,51 @@ def es_adorno(cell):
     return "adorno=1" in (cell.get("style") or "")
 
 
-def cabecera(titulo, ancho, mensajes, retornos=False, pre=""):
-    """La cabecera de una página: el título del proceso y la leyenda de las líneas y las tareas, encima de los carriles."""
+def claves_leyenda(proc, retornos=False):
+    """Las claves de la leyenda, en orden: solo lo que sale en el diagrama (líneas, tareas, puertas, eventos, supuestos
+    y notas), para que quien lo lee sepa qué es cada cosa sin la guía."""
+    tipos = {p.get("tipo") for p in proc.get("pasos", [])}
+    ext = set(proc.get("externos") or [])
     claves = [(f'<line x1="0" y1="0" x2="26" y2="0" stroke="{SECUENCIA}" stroke-width="1.5"/>', "secuencia")]
     if retornos:
         claves.append((f'<line x1="0" y1="0" x2="26" y2="0" stroke="{RETORNO}" stroke-width="1.6"/>', "vuelta atrás"))
-    if mensajes:
+    if any(f["de"] in ext or f["a"] in ext for f in proc.get("flujos", [])):
         claves.append((f'<line x1="0" y1="0" x2="26" y2="0" stroke="{NEUTRO}" stroke-width="1.2" stroke-dasharray="5 4"/>',
                        "mensaje con un externo"))
-    claves += [(f'<rect x="8" y="-6" width="12" height="12" rx="3" fill="{USUARIO[1]}" stroke="{USUARIO[0]}"/>', "tarea de usuario"),
-               (f'<rect x="8" y="-6" width="12" height="12" rx="3" fill="{SISTEMA[1]}" stroke="{SISTEMA[0]}"/>', "tarea de sistema")]
+    if tipos & {"tarea", "manual", "subproceso", "llamada"}:
+        claves.append((f'<rect x="8" y="-6" width="12" height="12" rx="3" fill="{USUARIO[1]}" stroke="{USUARIO[0]}"/>',
+                       "tarea de usuario"))
+    if tipos & {"sistema", "script"}:
+        claves.append((f'<rect x="8" y="-6" width="12" height="12" rx="3" fill="{SISTEMA[1]}" stroke="{SISTEMA[0]}"/>',
+                       "tarea de sistema"))
+    if tipos & PUERTAS:
+        claves.append((f'<path d="M14 -7 L21 0 L14 7 L7 0 Z" fill="#fff6e5" stroke="{AMBAR}" stroke-width="1.3"/>',
+                       "decisión"))
+    if tipos & INICIOS:
+        claves.append((f'<circle cx="14" cy="0" r="6" fill="#e8f6ee" stroke="{VERDE}" stroke-width="1.6"/>', "inicio"))
+    if "fin" in tipos:
+        claves.append((f'<circle cx="14" cy="0" r="6" fill="#fdecea" stroke="{ROJO}" stroke-width="2.2"/>', "fin"))
+    doble = f'<circle cx="14" cy="0" r="6.5" fill="#eef1f6" stroke="{AZUL}"/><circle cx="14" cy="0" r="4.8" fill="none" stroke="{AZUL}"/>'
+    if "mensaje" in tipos:
+        claves.append((doble + f'<rect x="11.5" y="-1.8" width="5" height="3.6" fill="{AZUL}"/>', "aviso o correo"))
+    if "temporizador" in tipos:
+        claves.append((doble + f'<path d="M14 -2.6 L14 0 L15.8 1" fill="none" stroke="{AZUL}" stroke-width="0.9"/>',
+                       "plazo o espera"))
+    if "error" in tipos:
+        claves.append((f'<circle cx="14" cy="0" r="6" fill="#fdecea" stroke="{ROJO}"/>'
+                       f'<path d="M11.5 2.5 L13 -2.5 L15 0.5 L16.5 -2.5" fill="none" stroke="{ROJO}" stroke-width="1"/>',
+                       "error"))
+    if any(p.get("supuesto") for p in proc.get("pasos", [])):
+        claves.append((f'<rect x="7" y="-6" width="14" height="12" rx="3" fill="#ffffff" stroke="#b86e00" '
+                       'stroke-dasharray="3 2"/>', "supuesto por confirmar"))
+    if proc.get("notas"):
+        claves.append(('<rect x="7" y="-6" width="14" height="12" rx="1.5" fill="#fffae6" stroke="#e7cf7a"/>', "nota"))
+    return claves
+
+
+def cabecera(titulo, ancho, proc, retornos=False, pre=""):
+    """La cabecera de una página: el título del proceso y la leyenda de lo que sale en él, encima de los carriles."""
+    claves = claves_leyenda(proc, retornos)
     largo = sum(36 + len(t) * 5.6 + 18 for _, t in claves)
     ancho = max(ancho, largo + 300)
     x, leyenda = 0, ""
@@ -321,7 +380,7 @@ def letra_tarea(nombre, tam=None):
     cabe, 10 o 9. La medida es aproximada y por exceso (cada letra, algo más de media letra de ancho)."""
     w, h = tam or TAM["tarea"]
     m = CODIGO.match(nombre or "")
-    texto, codigo = (m.group(1), True) if m and m.group(1) else (nombre or "", False)
+    texto, codigo = (m.group(1), not codigo_arriba(m.group(2))) if m and m.group(1) else (nombre or "", False)
     for letra in (11, 10, 9):
         lineas, actual = 1, 0
         for palabra in texto.split():
@@ -515,6 +574,9 @@ def validar(proc):
             err.append(f"una nota es de {n.get('paso')}, que no existe")
         elif not n.get("texto"):
             av.append(f"{n['paso']} tiene una nota sin texto")
+        elif len(n["texto"]) > NOTA_LARGA:
+            av.append(f"{n['paso']}: la nota tiene {len(n['texto'])} caracteres; deja en ella la frase que hay que ver en el "
+                      f"diagrama (unos {NOTA_LARGA}) y lleva el resto al paso a paso o a supuestos-X.md")
     for p in proc.get("pasos", []):
         falta = [k for k in ("id", "tipo", "carril", "nombre") if not p.get(k) and not (k == "nombre" and p.get("tipo") in PUERTAS | EVENTOS)]
         if falta:
@@ -914,6 +976,7 @@ def _cajas(proc, geo):
     return cajas
 
 
+NOTA_LARGA = 150   # caracteres: más, y la nota agranda el carril y se lee como un párrafo
 AIRE_NOTA = 10   # entre una nota y la línea de un flujo: más cerca, la línea parece el corchete o pisa el texto
 
 
@@ -1074,7 +1137,8 @@ def _celdas(proc, geo, pre=""):
                 pos = f' x="{sitio:.3f}"'
         arr = ('<Array as="points">' + "".join(f'<mxPoint x="{x:.0f}" y="{y:.0f}"/>' for x, y in pts) + "</Array>") if pts else ""
         de, a = ext_id.get(f["de"], f["de"]), ext_id.get(f["a"], f["a"])
-        celdas.append(_celda(f"{pre}F{i:02d}", f.get("etiqueta", ""),
+        color = None if f["de"] in ext_id or f["a"] in ext_id else _estilo(st).get("strokeColor")
+        celdas.append(_celda(f"{pre}F{i:02d}", etiqueta_flujo(f.get("etiqueta", ""), color),
                              f'style="{st}" edge="1" parent="1" source="{_xml_attr(de)}" target="{_xml_attr(a)}"',
                              f'<mxGeometry{pos} relative="1" as="geometry">{arr}{desvio}</mxGeometry>', datos(f, DATOS_FLUJO)))
     return celdas
@@ -1124,7 +1188,7 @@ def xml_drawio(paginas):
         hojas.append(f'<diagram id="{"proceso" if uno else f"tramo-{k}"}" name="' + _xml_attr(titulo)
                      + f'"><mxGraphModel grid="1" gridSize="10" page="0" math="0" background="{PAPEL}"><root>'
                      '<mxCell id="0"/><mxCell id="1" parent="0"/>'
-                     + cabecera(titulo, geo["ancho"], any(es_mensaje(f, proc) for f in proc["flujos"]),
+                     + cabecera(titulo, geo["ancho"], proc,
                                 any(es_retorno(f, geo["pasos"], proc.get("externos") or ()) for f in proc["flujos"]),
                                 "" if uno else f"t{k}-")
                      + "".join(_celdas(proc, geo, "" if uno else f"t{k}-"))
@@ -1155,6 +1219,9 @@ def _estilo(s):
 
 
 def _texto(v):
+    codigo = re.search(r'<div class="codigo"[^>]*>(.*?)</div>', v or "", flags=re.S)
+    if codigo:   # el código del cliente se dibuja arriba y va al final del nombre
+        v = v[:codigo.start()] + v[codigo.end():] + " " + codigo.group(1)
     v = re.sub(r"<br\s*/?>|</div>|</p>|<div[^>]*>|<p[^>]*>", " ", v or "", flags=re.I)
     v = re.sub(r"<[^>]+>", "", v)
     return re.sub(r"\s+", " ", html.unescape(v)).strip()

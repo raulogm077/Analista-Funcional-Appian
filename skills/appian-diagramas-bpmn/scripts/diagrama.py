@@ -739,7 +739,8 @@ class Editor:
                 for e, c in list(self.f.celdas()):  # etiquetas sueltas del flujo: se sustituyen por la etiqueta
                     if c.get("parent") == el.get("id") and c.get("vertex") == "1":
                         self.f.root.remove(e)
-                self.f.poner_etiqueta(el, cell, f.get("etiqueta", ""))
+                color = None if mensaje else dm._estilo(cell.get("style")).get("strokeColor")
+                self.f.poner_etiqueta(el, cell, dm.etiqueta_flujo(f.get("etiqueta", ""), color))
                 self.f.poner_datos(el, cell, f, dm.DATOS_FLUJO)
                 if mensaje:
                     return
@@ -757,7 +758,8 @@ class Editor:
         while f"F{n:02d}" in usados:
             n += 1
         estilo = dm.ESTILO_MENSAJE if mensaje else dm.estilo_flujo(f)
-        _, cell = self.f.nueva_celda(f"F{n:02d}", f.get("etiqueta", ""), {"style": estilo, "edge": "1", "parent": "1",
+        etiqueta = dm.etiqueta_flujo(f.get("etiqueta", ""), None if mensaje else dm._estilo(estilo).get("strokeColor"))
+        _, cell = self.f.nueva_celda(f"F{n:02d}", etiqueta, {"style": estilo, "edge": "1", "parent": "1",
                                                                           "source": de, "target": a}, dm.DATOS_FLUJO, f)
         ET.SubElement(cell, "mxGeometry", {"relative": "1", "as": "geometry"})
 
