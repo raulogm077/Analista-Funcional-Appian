@@ -1614,7 +1614,7 @@ def finales_conservados(tmp):
 # ---------------------------------------------------------------- aspecto: tarjetas, adornos y el aspecto de antes
 def tema(tmp):
     """Las tareas son tarjetas con su pictograma (un adorno hijo de la tarea) y el código en una línea aparte; la página
-    lleva cabecera. leer() ignora los adornos y devuelve los nombres de siempre; cambiar el tipo cambia el pictograma; y un
+    lleva cabecera, los carriles alternan y la vuelta atrás tiene su color. leer() ignora los adornos y devuelve los nombres de siempre; cambiar el tipo cambia el pictograma; y un
     .drawio del aspecto de antes (con el marcador BPMN) se sigue leyendo igual y pasa al nuevo al recolocarlo."""
     import drawio_modelo as dm
     sin = entorno(sin_navegador=True)
@@ -1630,18 +1630,20 @@ def tema(tmp):
     check(all(f"tipo={p['tipo']};" in cel[p["id"]].get("style", "") for p in tareas), "aspecto: el tipo va en tipo= del estilo")
     check(any(c.endswith("cabecera") and "adorno=1" in (cel[c].get("style") or "") for c in cel), "aspecto: cabecera con título")
     root, _ = celdas(d)
-    orden = [c.get("id") for c in root]
-    rejilla = cel.get("cuadricula")
     carriles = [c for c in root if "swimlane" in (c.get("style") or "")]
-    def caja(c):
-        g = c.find("mxGeometry")
-        return [float(g.get(k, 0)) for k in ("x", "y", "width", "height")]
-    cubre = rejilla is not None and all(
-        caja(rejilla)[0] <= caja(c)[0] and caja(rejilla)[1] <= caja(c)[1]
-        and caja(c)[0] + caja(c)[2] <= sum(caja(rejilla)[0::2]) and caja(c)[1] + caja(c)[3] <= sum(caja(rejilla)[1::2])
-        for c in carriles)
-    check(rejilla is not None and "adorno=1" in rejilla.get("style", "") and orden.index("cuadricula") == 2 and cubre,
-          "aspecto: cuadrícula de fondo detrás de todo, cubriendo los carriles")
+    check([c.get("style") for c in carriles] == [dm.estilo_carril(i, c.get("value")) for i, c in enumerate(carriles, 1)]
+          and dm._estilo(dm.estilo_carril(2, "Revisión")).get("fillColor") == "#f8f9fb"
+          and dm._estilo(dm.estilo_carril(1, "Revisión")).get("fillColor") == "#ffffff",
+          "aspecto: los carriles alternan blanco y gris claro")
+    check(dm.CARRIL_SISTEMA.match("Aplicación") and "#f3faf9" in dm.estilo_carril(1, "Aplicación"),
+          "aspecto: el carril de la aplicación, en verde azulado")
+    centro = {"A": (100, 0), "B": (300, 0)}
+    check(dm.es_retorno({"de": "B", "a": "A"}, centro) and not dm.es_retorno({"de": "A", "a": "B"}, centro)
+          and dm.ESTILO_RETORNO in dm.estilo_flujo({"de": "B", "a": "A"}, (), True),
+          "aspecto: un flujo que vuelve a un paso anterior va en el color de vuelta atrás")
+    check("background-color" in dm.etiqueta_paso("tarea", "Revisar [nuevo paso 8]")
+          and "background-color" not in dm.etiqueta_paso("tarea", "Revisar [paso 8]"),
+          "aspecto: el código de un paso nuevo, resaltado")
     valor = cel["ACT-01"].get("value", "")
     check("<span" in valor and "[EJ-01.001]" in valor and "monospace" in valor, "aspecto: el código va en su línea, en monoespaciada")
     proc, _, _ = dm.leer(str(d))
@@ -1650,9 +1652,12 @@ def tema(tmp):
     cambios.write_text(json.dumps({"cambios": [{"poner": {"id": "ACT-01", "tipo": "manual"}}]}), encoding="utf-8")
     run("actualizar", d, cambios, esperado=2, env=sin)
     _, cel = celdas(d)
-    manual = dm._uri_svg((SCRIPTS.parent / "assets" / "iconos" / "manual.svg").read_text(encoding="utf-8"))
+    manual = re.search(r"<svg[^>]*>(.*)</svg>", (SCRIPTS.parent / "assets" / "iconos" / "manual.svg").read_text(encoding="utf-8"),
+                       re.S).group(1)
     hijos = [c for c in cel.values() if c.get("parent") == "ACT-01" and dm.es_adorno(c)]
-    check("tipo=manual;" in cel["ACT-01"].get("style", "") and len(hijos) == 1 and manual in hijos[0].get("style", ""),
+    dibujo = (base64.b64decode(re.search(r"image=data:image/svg\+xml,([^;]+);", hijos[0].get("style", "")).group(1)).decode()
+              if len(hijos) == 1 else "")
+    check("tipo=manual;" in cel["ACT-01"].get("style", "") and len(hijos) == 1 and manual in dibujo,
           "aspecto: cambiar el tipo de una tarea cambia su pictograma (y no deja el anterior)")
     run("comparar", d, env=sin)
     # el aspecto de antes
@@ -1669,8 +1674,8 @@ def tema(tmp):
     run("actualizar", v, cambios, esperado=2, env=sin)
     _, cel = celdas(v)
     tareas = [p["id"] for p in base["pasos"] if p["tipo"] in dm.TAREAS]
-    check(all("tipo=" in cel[t].get("style", "") and (t + "-icono") in cel for t in tareas),
-          "aspecto de antes: al recolocarlo pasa al aspecto nuevo")
+    check(all("tipo=" in cel[t].get("style", "") and (t + "-icono") in cel and dm.ASPECTO in cel[t + "-icono"].get("style", "")
+              for t in tareas), "aspecto de antes: al recolocarlo pasa al aspecto nuevo")
 
 
 def cruces(drawio):

@@ -49,76 +49,88 @@ NOMBRE_DATO = {"nodo": "nodo", "temporizador": "temporizador", "proceso_llamado"
 SUPUESTO = "strokeColor=#b86e00;"
 SUPUESTO_TAREA = SUPUESTO + "dashed=1;dashPattern=5 3;"
 
-AZUL, VERDE, ROJO, AMBAR = "#1d659c", "#117c00", "#b2002c", "#b86e00"
-# Aspecto: el de stack-diagram (papel, carriles tintados, un color de acento para la secuencia, monoespaciada para lo
-# técnico). Las tareas son tarjetas: pictograma de su tipo arriba (un adorno, ver adorno_tarea), nombre debajo y el
-# código [GI-…] en una línea aparte (ver etiqueta_paso). Eventos y puertas siguen siendo los de BPMN.
-ACENTO, NEUTRO, TINTA, APAGADO, BORDE, PAPEL = "#2f6fdb", "#6b7385", "#1f2430", "#8a93a3", "#c3cad6", "#f8f9fb"
+# Aspecto «lámina»: el color dice qué es cada cosa y las líneas de secuencia van neutras. Tarea de usuario en añil, de
+# sistema en verde azulado, decisiones en ámbar, inicio en verde, fin en rojo y eventos intermedios en pizarra; la
+# vuelta a un paso anterior, en naranja. Las tareas son tarjetas: el pictograma de su tipo en una placa arriba a la
+# izquierda (un adorno, ver adorno_tarea), el nombre debajo y el código [GI-…] en una línea aparte (ver etiqueta_paso).
+AZUL, VERDE, ROJO, AMBAR = "#4b5d7a", "#1e9157", "#c93a30", "#b7770f"
+TINTA, SUAVE, APAGADO, BORDE, LINEA, PAPEL = "#1a1f2b", "#4a5366", "#7d8698", "#d5dae2", "#e4e7ec", "#ffffff"
+SECUENCIA, RETORNO, NEUTRO = "#3a4356", "#c2770c", "#8a93a5"
+USUARIO, SISTEMA, NUEVO = ("#3e4fc9", "#eef0fc"), ("#0f7f73", "#e8f6f4"), ("#13795b", "#e3f5ee")
 FUENTE = "fontFamily=Segoe UI,Helvetica,Arial,sans-serif;"
 MONO = "Consolas,JetBrains Mono,monospace"
 _BASE = f"points=[];html=1;fontSize=12;fontColor={TINTA};" + FUENTE
 # las etiquetas de eventos y puertas se ajustan a 110 px, el mismo ancho que reserva la colocación
 _EV = _BASE + ("shape=mxgraph.bpmn.event;verticalLabelPosition=bottom;verticalAlign=top;align=center;"
                "whiteSpace=wrap;labelWidth=110;perimeter=ellipsePerimeter;outlineConnect=0;aspect=fixed;"
-               "labelBackgroundColor=none;fillColor=#ffffff;")
+               "labelBackgroundColor=none;fontSize=11;fontColor=" + SUAVE + ";")
 _GW = _BASE + ("shape=mxgraph.bpmn.gateway2;outline=none;symbol=none;verticalLabelPosition=top;verticalAlign=bottom;"
-               "align=center;whiteSpace=wrap;labelWidth=110;perimeter=rhombusPerimeter;outlineConnect=0;"
-               "strokeColor=" + AMBAR + ";fillColor=#fff8e6;labelBackgroundColor=none;")
-# tarjeta: el tipo va en tipo= (no hay marcador BPMN que lo diga); el texto, debajo del pictograma
-_TK = ("rounded=1;arcSize=10;absoluteArcSize=1;whiteSpace=wrap;html=1;points=[];verticalAlign=top;spacingTop=32;"
-       f"spacingLeft=4;spacingRight=4;fontSize=11;fontColor={TINTA};strokeColor={BORDE};" + FUENTE)
+               "align=center;whiteSpace=wrap;labelWidth=110;perimeter=rhombusPerimeter;outlineConnect=0;fontSize=11;fontStyle=1;"
+               "strokeColor=" + AMBAR + ";strokeWidth=1.5;fillColor=#fff6e5;labelBackgroundColor=none;")
+# tarjeta: el tipo va en tipo= (no hay marcador BPMN que lo diga); el texto, alineado a la izquierda debajo de la placa
+_TK = ("rounded=1;arcSize=10;absoluteArcSize=1;whiteSpace=wrap;html=1;points=[];align=left;verticalAlign=top;"
+       f"spacingTop=30;spacingLeft=8;spacingRight=6;fontSize=11;fontStyle=1;fontColor={TINTA};strokeColor={BORDE};"
+       "fillColor=#ffffff;" + FUENTE)
+_INT = f"strokeColor={AZUL};fillColor=#eef1f6;"
 ESTILO = {
-    "inicio": _EV + f"outline=standard;symbol=general;strokeColor={VERDE};",
-    "inicio_temporizador": _EV + f"outline=standard;symbol=timer;strokeColor={VERDE};",
-    "inicio_mensaje": _EV + f"outline=standard;symbol=message;strokeColor={VERDE};",
-    "fin": _EV + f"outline=end;symbol=general;strokeColor={ROJO};",
-    "temporizador": _EV + f"outline=catching;symbol=timer;strokeColor={AZUL};",
-    "mensaje": _EV + f"outline=throwing;symbol=message;strokeColor={AZUL};",
-    "intermedio": _EV + f"outline=catching;symbol=general;strokeColor={AZUL};",
-    "error": _EV + f"outline=boundInt;symbol=error;strokeColor={ROJO};",
+    "inicio": _EV + f"outline=standard;symbol=general;strokeColor={VERDE};fillColor=#e8f6ee;strokeWidth=2;",
+    "inicio_temporizador": _EV + f"outline=standard;symbol=timer;strokeColor={VERDE};fillColor=#e8f6ee;strokeWidth=2;",
+    "inicio_mensaje": _EV + f"outline=standard;symbol=message;strokeColor={VERDE};fillColor=#e8f6ee;strokeWidth=2;",
+    "fin": _EV + f"outline=end;symbol=general;strokeColor={ROJO};fillColor=#fdecea;",
+    "temporizador": _EV + "outline=catching;symbol=timer;" + _INT,
+    "mensaje": _EV + "outline=throwing;symbol=message;" + _INT,
+    "intermedio": _EV + "outline=catching;symbol=general;" + _INT,
+    "error": _EV + f"outline=boundInt;symbol=error;strokeColor={ROJO};fillColor=#fdecea;",
     "exclusiva": _GW + "gwType=exclusive;",
     "paralela": _GW + "gwType=parallel;",
     "inclusiva": _GW + "gwType=inclusive;",
-    "tarea": _TK + "tipo=tarea;fillColor=#ffffff;",
-    "sistema": _TK + "tipo=sistema;fillColor=#f3f7fe;",
-    "script": _TK + "tipo=script;fillColor=#f3f7fe;",
-    "manual": _TK + "tipo=manual;fillColor=#ffffff;",
-    "subproceso": _TK + "tipo=subproceso;fillColor=#ffffff;dashed=1;dashPattern=6 3;",
-    "llamada": _TK + "tipo=llamada;fillColor=#ffffff;strokeWidth=2.5;",
-    "enlace_salida": _EV + f"outline=throwing;symbol=link;strokeColor={AZUL};enlace=1;",
-    "enlace_entrada": _EV + f"outline=catching;symbol=link;strokeColor={AZUL};enlace=1;",
+    "tarea": _TK + "tipo=tarea;",
+    "sistema": _TK + "tipo=sistema;",
+    "script": _TK + "tipo=script;",
+    "manual": _TK + "tipo=manual;",
+    "subproceso": _TK + "tipo=subproceso;dashed=1;dashPattern=6 3;",
+    "llamada": _TK + "tipo=llamada;strokeWidth=2.5;",
+    "enlace_salida": _EV + "outline=throwing;symbol=link;enlace=1;" + _INT,
+    "enlace_entrada": _EV + "outline=catching;symbol=link;enlace=1;" + _INT,
 }
 ENLACE = re.compile(r"^ENL-(\d+)-([SE])$")
 ID_TRAMO = re.compile(r"^tramo-(\d+)$")
 NOMBRE_TRAMO = re.compile(r"^(.*?) \(tramo \d+ de \d+(?:: .*)?\)$")   # «<proceso> (tramo N de M: <primero> – <último>)»
-# el nombre del carril, en horizontal arriba a la izquierda (como la etiqueta de un grupo), sin cabecera girada
-ESTILO_CARRIL = ("swimlane;horizontal=1;startSize=26;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;align=left;"
-                 f"spacingLeft=12;fontColor={ACENTO};fillColor=#f5f8fe;swimlaneFillColor=#f5f8fe;fillOpacity=50;strokeColor=#a9c0ee;"
+# el nombre del carril, en horizontal arriba a la izquierda, sin cabecera girada; los carriles alternan blanco y gris
+# muy claro (estilo_carril) y el de la aplicación va en verde azulado
+ESTILO_CARRIL = ("swimlane;horizontal=1;startSize=26;html=1;whiteSpace=wrap;fontSize=13;fontStyle=1;align=left;"
+                 f"spacingLeft=12;fontColor={TINTA};fillColor=#ffffff;swimlaneFillColor=#ffffff;strokeColor={LINEA};"
                  "swimlaneLine=0;" + FUENTE)
-ESTILO_FLUJO = (f"edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor={ACENTO};strokeWidth=1.6;"
-                f"endArrow=block;endFill=1;endSize=5;fontColor={ACENTO};labelBackgroundColor={PAPEL};fontFamily={MONO};")
+CARRIL_SISTEMA = re.compile(r"^(aplicaci[oó]n|sistema|appian)\b", re.I)
+
+
+def estilo_carril(i, nombre):
+    """El estilo del carril `i` (desde 1): los pares, en gris muy claro; el de la aplicación, en verde azulado."""
+    if CARRIL_SISTEMA.match(nombre or ""):
+        return (ESTILO_CARRIL.replace(f"fontColor={TINTA};", f"fontColor={SISTEMA[0]};")
+                .replace("fillColor=#ffffff;swimlaneFillColor=#ffffff;", "fillColor=#f3faf9;swimlaneFillColor=#f3faf9;"))
+    if i % 2 == 0:
+        return ESTILO_CARRIL.replace("fillColor=#ffffff;swimlaneFillColor=#ffffff;", "fillColor=#f8f9fb;swimlaneFillColor=#f8f9fb;")
+    return ESTILO_CARRIL
+
+
+# las etiquetas de los flujos, en negrita sobre blanco, del color de la línea
+ESTILO_FLUJO = (f"edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;strokeColor={SECUENCIA};strokeWidth=1.5;"
+                f"endArrow=block;endFill=1;endSize=6;fontColor={SECUENCIA};labelBackgroundColor=#ffffff;"
+                + FUENTE)
+# un flujo que vuelve a un paso anterior (a su izquierda): en naranja, para que los reprocesos se vean de un vistazo
+ESTILO_RETORNO = ESTILO_FLUJO.replace(SECUENCIA, RETORNO).replace("strokeWidth=1.5;", "strokeWidth=1.6;")
 DEFECTO = "startArrow=dash;startFill=0;startSize=10;"          # marca del flujo por defecto
-ESTILO_MENSAJE = (f"edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;strokeColor={NEUTRO};dashed=1;dashPattern=4 4;"
+ESTILO_MENSAJE = (f"edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;strokeColor={NEUTRO};dashed=1;dashPattern=5 4;"
                   "startArrow=oval;startFill=0;startSize=6;endArrow=block;endFill=0;endSize=7;"
-                  f"fontColor={NEUTRO};labelBackgroundColor={PAPEL};fontFamily={MONO};")
-ESTILO_EXTERNO = ("rounded=1;arcSize=6;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fontColor=#a65a17;fillColor=#fdf5ee;"
-                  "strokeColor=#e3a467;externo=1;" + FUENTE)
+                  f"fontColor={SUAVE};labelBackgroundColor=#ffffff;" + FUENTE)
+ESTILO_EXTERNO = (f"rounded=1;arcSize=6;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;fontColor={SUAVE};fillColor=#f3f4f6;"
+                  "strokeColor=#b9c0cb;dashed=1;dashPattern=5 4;externo=1;" + FUENTE)
 
-
-def _forma_propia(xml):
-    """Forma propia de draw.io (shape=stencil(…)): el XML de la forma comprimido como lo guarda draw.io."""
-    co = zlib.compressobj(9, zlib.DEFLATED, -15)
-    datos = co.compress(urllib.parse.quote(xml, safe="").encode("utf-8")) + co.flush()
-    return "stencil(" + base64.b64encode(datos).decode() + ")"
-
-
-# la nota es una anotación BPMN: un corchete con dos tramos cortos arriba y abajo, abierto a la derecha
-CORCHETE = _forma_propia('<shape w="100" h="100" aspect="variable" strokewidth="inherit"><foreground><path>'
-                         '<move x="10" y="0"/><line x="0" y="0"/><line x="0" y="100"/><line x="10" y="100"/>'
-                         '</path><stroke/></foreground></shape>')
-ESTILO_NOTA = (f"shape={CORCHETE};whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
-               f"spacingLeft=8;fontSize=10;fontColor=#4a5163;fillColor=none;strokeColor={BORDE};nota=1;fontFamily={MONO};")
-ESTILO_ASOCIACION = f"html=1;dashed=1;dashPattern=1 3;endArrow=none;strokeColor={BORDE};asociacion=1;"
+# la nota: un papel amarillo claro, con la letra normal, unido a su paso con una línea de puntos
+ESTILO_NOTA = ("rounded=1;arcSize=4;absoluteArcSize=1;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
+               "spacingLeft=8;spacingRight=6;fontSize=10;fontColor=#5a4a14;fillColor=#fffae6;strokeColor=#e7cf7a;nota=1;" + FUENTE)
+ESTILO_ASOCIACION = "html=1;dashed=1;dashPattern=1 3;endArrow=none;strokeColor=#d9bf5f;strokeWidth=1.2;asociacion=1;"
 CABECERA = 40            # ancho de la cabecera de cada carril
 ALTO_CARRIL = 140        # alto por defecto de un carril nuevo
 COLUMNA = 150            # separación horizontal entre pasos al colocar a mano
@@ -134,17 +146,31 @@ class ErrorProceso(Exception):
 # pasos ni avisa de ellos. El pictograma es hijo de su tarea, así que se mueve con ella en draw.io.
 ICONOS = HERE.parent / "assets" / "iconos"
 CODIGO = re.compile(r"^(.*?)\s*(\[[^\]]+\])\s*$")   # «Nombre [EJ-01.001]»: el código del cliente, al final
-ICONO = 22
+ICONO = 20
+ASPECTO = "aspecto=lamina;"   # en el pictograma: el .drawio ya tiene el aspecto actual (recolocar conserva sus estilos)
+
+
+def aspecto_actual(f):
+    """Si el .drawio abierto (un Fichero) ya tiene el aspecto actual: si no, al recolocar pasa a él."""
+    return any(ASPECTO in (cell.get("style") or "") for _, cell in f.celdas())
+
+
+NUEVO_PASO = re.compile(r"\bnuevo\b", re.I)   # «[nuevo paso 8]»: el código de un paso que no existía, resaltado
 
 
 def etiqueta_paso(tipo, nombre):
     """Lo que se escribe en la celda de un paso. En una tarea, el código del cliente va en una línea aparte en
-    monoespaciada; leer() lo vuelve a juntar (_texto) y el nombre del proceso no cambia."""
+    monoespaciada (en una píldora verde si dice «nuevo»); leer() lo vuelve a juntar (_texto) y el nombre no cambia."""
     m = CODIGO.match(nombre or "") if tipo in TAREAS else None
     if not m or not m.group(1):
         return nombre or ""
-    return (html.escape(m.group(1), quote=False) + f'<br><span style="font-family:{MONO};font-size:9px;color:{APAGADO}">'
-            + html.escape(m.group(2), quote=False) + "</span>")
+    if NUEVO_PASO.search(m.group(2)):
+        estilo = (f"font-family:{MONO};font-size:9px;font-weight:normal;color:#ffffff;background-color:{NUEVO[0]};"
+                  "border-radius:6px;padding:0 4px")
+    else:
+        estilo = f"font-family:{MONO};font-size:9px;font-weight:normal;color:{APAGADO}"
+    return (html.escape(m.group(1), quote=False) + f'<br><span style="{estilo}">' + html.escape(m.group(2), quote=False)
+            + "</span>")
 
 
 def _uri_svg(svg):
@@ -155,11 +181,15 @@ def adorno_tarea(pid, tipo):
     """(atributos, geometría) del pictograma de una tarea: hijo de la tarea, centrado arriba. None si no es tarea."""
     if tipo not in TAREAS:
         return None
-    svg = (ICONOS / f"{tipo}.svg").read_text(encoding="utf-8")
+    tinta, placa = SISTEMA if tipo in ("sistema", "script") else USUARIO
+    icono = (ICONOS / f"{tipo}.svg").read_text(encoding="utf-8")
+    trazos = re.search(r"<svg[^>]*>(.*)</svg>", icono, re.S).group(1)
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{ICONO}" height="{ICONO}" viewBox="0 0 {ICONO} {ICONO}">'
+           f'<rect width="{ICONO}" height="{ICONO}" rx="6" fill="{placa}"/><g transform="translate(3,3) scale(0.5833)" '
+           f'fill="none" stroke="{tinta}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">{trazos}</g></svg>')
     atributos = {"id": f"{pid}-icono", "value": "", "vertex": "1", "parent": pid,
-                 "style": f"shape=image;image={_uri_svg(svg)};imageAspect=1;adorno=1;editable=0;resizable=0;rotatable=0;"}
-    geometria = {"x": f"{TAM[tipo][0] / 2 - ICONO / 2:.0f}", "y": "8", "width": str(ICONO), "height": str(ICONO),
-                 "as": "geometry"}
+                 "style": f"shape=image;image={_uri_svg(svg)};imageAspect=1;adorno=1;{ASPECTO}editable=0;resizable=0;rotatable=0;"}
+    geometria = {"x": "8", "y": "8", "width": str(ICONO), "height": str(ICONO), "as": "geometry"}
     return atributos, geometria
 
 
@@ -173,47 +203,43 @@ def es_adorno(cell):
     return "adorno=1" in (cell.get("style") or "")
 
 
-def cabecera(titulo, ancho, mensajes, pre=""):
-    """La cabecera de una página: el título del proceso y la leyenda de las líneas, encima de los carriles."""
-    leyenda = (f'<line x1="0" y1="0" x2="26" y2="0" stroke="{ACENTO}" stroke-width="1.6"/>'
-               '<text x="32" y="3">secuencia</text>')
+def cabecera(titulo, ancho, mensajes, retornos=False, pre=""):
+    """La cabecera de una página: el título del proceso y la leyenda de las líneas y las tareas, encima de los carriles."""
+    claves = [(f'<line x1="0" y1="0" x2="26" y2="0" stroke="{SECUENCIA}" stroke-width="1.5"/>', "secuencia")]
+    if retornos:
+        claves.append((f'<line x1="0" y1="0" x2="26" y2="0" stroke="{RETORNO}" stroke-width="1.6"/>', "vuelta atrás"))
     if mensajes:
-        leyenda += (f'<line x1="110" y1="0" x2="136" y2="0" stroke="{NEUTRO}" stroke-width="1.4" stroke-dasharray="4 4"/>'
-                    '<text x="142" y="3">mensaje con un participante externo</text>')
-    ancho = max(ancho, 400)
-    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{ancho:.0f}" height="56" viewBox="0 0 {ancho:.0f} 56">'
-           f'<text x="0" y="30" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="22" font-weight="700" '
+        claves.append((f'<line x1="0" y1="0" x2="26" y2="0" stroke="{NEUTRO}" stroke-width="1.2" stroke-dasharray="5 4"/>',
+                       "mensaje con un externo"))
+    claves += [(f'<rect x="8" y="-6" width="12" height="12" rx="3" fill="{USUARIO[1]}" stroke="{USUARIO[0]}"/>', "tarea de usuario"),
+               (f'<rect x="8" y="-6" width="12" height="12" rx="3" fill="{SISTEMA[1]}" stroke="{SISTEMA[0]}"/>', "tarea de sistema")]
+    largo = sum(36 + len(t) * 5.6 + 18 for _, t in claves)
+    ancho = max(ancho, largo + 300)
+    x, leyenda = 0, ""
+    for marca, texto in claves:
+        leyenda += f'<g transform="translate({x},0)">{marca}<text x="34" y="4">{texto}</text></g>'
+        x += 36 + len(texto) * 5.6 + 18
+    # el título, en 24 px o más pequeño si no cabe en el ancho (unos 0,58 de su cuerpo por letra, en negrita); si no
+    # deja sitio a la leyenda a su derecha, la leyenda va debajo
+    letra = max(14, min(24, int(ancho / (max(len(titulo), 1) * 0.58))))
+    debajo = len(titulo) * letra * 0.58 + 40 + largo > ancho
+    alto, ly, lx = (76, 54, 0) if debajo else (56, 26, max(ancho - largo, 0))
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{ancho:.0f}" height="{alto}" viewBox="0 0 {ancho:.0f} {alto}">'
+           f'<text x="0" y="30" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="{letra}" font-weight="700" '
            f'fill="{TINTA}">{html.escape(titulo, quote=False)}</text>'
-           f'<g font-family="{MONO}" font-size="10" fill="{APAGADO}" transform="translate({max(ancho - 390, 0):.0f},28)">'
-           f'{leyenda}</g><line x1="0" y1="48" x2="{ancho:.0f}" y2="48" stroke="{BORDE}"/></svg>')
+           f'<g font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="11" fill="{SUAVE}" '
+           f'transform="translate({lx:.0f},{ly})">{leyenda}</g>'
+           f'<line x1="0" y1="{alto - 8}" x2="{ancho:.0f}" y2="{alto - 8}" stroke="{LINEA}"/></svg>')
     return (f'<mxCell id="{pre}cabecera" value="" style="shape=image;image={_uri_svg(svg)};imageAspect=0;adorno=1;'
-            f'editable=0;" vertex="1" parent="1"><mxGeometry x="0" y="-68" width="{ancho:.0f}" height="56" '
+            f'editable=0;" vertex="1" parent="1"><mxGeometry x="0" y="{-12 - alto}" width="{ancho:.0f}" height="{alto}" '
             'as="geometry"/></mxCell>')
 
 
-CUADRO, RAYA = 24, "#e8ebf1"   # la cuadrícula de papel milimetrado del fondo: paso y color de las líneas
-
-
-def cuadricula(geo, pre=""):
-    """La cuadrícula del fondo, como en stack-diagram: un adorno (imagen sin texto) detrás de todo, que cubre los carriles
-    y los participantes externos con un margen. Sale en el PNG (la del editor de draw.io, no) y leer() la ignora."""
-    franjas = list(geo.get("carriles", {}).values()) + list((geo.get("externos") or {}).values())
-    if not franjas:
-        return ""
-    arriba = min(f[0] for f in franjas) - CUADRO
-    abajo = max(f[0] + f[1] for f in franjas) + CUADRO
-    # cuadros enteros, y la última raya a la derecha y abajo: la cuadrícula no acaba en un cuadro cortado
-    x0 = -CUADRO
-    ancho = math.ceil((geo["ancho"] + 2 * CUADRO) / CUADRO) * CUADRO + 1
-    alto = math.ceil((abajo - arriba) / CUADRO) * CUADRO + 1
-    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{ancho:.0f}" height="{alto:.0f}" '
-           f'viewBox="0 0 {ancho:.0f} {alto:.0f}"><defs><pattern id="c" width="{CUADRO}" height="{CUADRO}" '
-           f'patternUnits="userSpaceOnUse"><path d="M {CUADRO} 0 L 0 0 0 {CUADRO}" fill="none" stroke="{RAYA}" '
-           f'stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(#c)"/>'
-           f'<path d="M {ancho - 0.5:.1f} 0 V {alto:.0f} M 0 {alto - 0.5:.1f} H {ancho:.0f}" stroke="{RAYA}"/></svg>')
-    return (f'<mxCell id="{pre}cuadricula" value="" style="shape=image;image={_uri_svg(svg)};imageAspect=0;adorno=1;'
-            f'editable=0;movable=0;resizable=0;rotatable=0;deletable=1;" vertex="1" parent="1"><mxGeometry x="{x0:.0f}" '
-            f'y="{arriba:.0f}" width="{ancho:.0f}" height="{alto:.0f}" as="geometry"/></mxCell>')
+def es_retorno(f, centro, externos=()):
+    """Si un flujo de secuencia vuelve a un paso anterior: su destino queda a la izquierda de su origen."""
+    if f["de"] in externos or f["a"] in externos or f["de"] not in centro or f["a"] not in centro:
+        return False
+    return centro[f["a"]][0] < centro[f["de"]][0] - 20
 
 
 def con_lado(estilo, lado):
@@ -226,11 +252,11 @@ def con_lado(estilo, lado):
     return ";".join(partes) + ";"
 
 
-def estilo_flujo(f, externos=()):
-    """Estilo de un flujo: de secuencia (discontinuo o por defecto) o de mensaje, si une con un externo."""
+def estilo_flujo(f, externos=(), retorno=False):
+    """Estilo de un flujo: de secuencia (discontinuo, por defecto o de vuelta atrás) o de mensaje, si une con un externo."""
     if f["de"] in externos or f["a"] in externos:
         return ESTILO_MENSAJE
-    return ESTILO_FLUJO + ("dashed=1;" if f.get("discontinuo") else "") + (DEFECTO if f.get("defecto") else "")
+    return (ESTILO_RETORNO if retorno else ESTILO_FLUJO) + ("dashed=1;" if f.get("discontinuo") else "") + (DEFECTO if f.get("defecto") else "")
 
 
 def es_mensaje(f, proc):
@@ -943,7 +969,7 @@ def _celdas(proc, geo, pre=""):
     for i, c in enumerate(proc["carriles"], 1):
         y, h = geo["carriles"][c]
         lane_id[c] = f"{pre}carril-{i}"
-        celdas.append(f'<mxCell id="{lane_id[c]}" value="{_xml_attr(c)}" style="{ESTILO_CARRIL}" vertex="1" parent="1">'
+        celdas.append(f'<mxCell id="{lane_id[c]}" value="{_xml_attr(c)}" style="{estilo_carril(i, c)}" vertex="1" parent="1">'
                       f'<mxGeometry y="{y:.0f}" width="{geo["ancho"]:.0f}" height="{h:.0f}" as="geometry"/></mxCell>')
     contorno = contornos(proc)
     for p in proc["pasos"]:
@@ -1002,7 +1028,7 @@ def _celdas(proc, geo, pre=""):
         if (f["de"] in ext_id) != (f["a"] in ext_id):
             mensajes.setdefault(f["de"] if f["a"] in ext_id else f["a"], []).append(i)
     for i, f in enumerate(proc["flujos"], 1):
-        st = estilo_flujo(f, ext_id)
+        st = estilo_flujo(f, ext_id, es_retorno(f, centro, ext_id))
         puntos_mensaje = []
         pos = ""
         desvio = ""
@@ -1098,8 +1124,9 @@ def xml_drawio(paginas):
         hojas.append(f'<diagram id="{"proceso" if uno else f"tramo-{k}"}" name="' + _xml_attr(titulo)
                      + f'"><mxGraphModel grid="1" gridSize="10" page="0" math="0" background="{PAPEL}"><root>'
                      '<mxCell id="0"/><mxCell id="1" parent="0"/>'
-                     + cuadricula(geo, "" if uno else f"t{k}-")
-                     + cabecera(titulo, geo["ancho"], any(es_mensaje(f, proc) for f in proc["flujos"]), "" if uno else f"t{k}-")
+                     + cabecera(titulo, geo["ancho"], any(es_mensaje(f, proc) for f in proc["flujos"]),
+                                any(es_retorno(f, geo["pasos"], proc.get("externos") or ()) for f in proc["flujos"]),
+                                "" if uno else f"t{k}-")
                      + "".join(_celdas(proc, geo, "" if uno else f"t{k}-"))
                      + "</root></mxGraphModel></diagram>")
     return '<mxfile host="appian-analisis-funcional">' + "".join(hojas) + "</mxfile>"

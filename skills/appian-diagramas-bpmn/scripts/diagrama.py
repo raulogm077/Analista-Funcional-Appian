@@ -436,9 +436,9 @@ class Editor:
             padre = ultimo.get("parent")
             gy = float(ultimo.find("mxGeometry").get("y", 0)) + h
             gx = float(ultimo.find("mxGeometry").get("x", 0))
-            estilo = ultimo.get("style") or dm.ESTILO_CARRIL
+            estilo = dm.estilo_carril(len(ultimos) + 1, nombre)
         else:
-            padre, gx, gy, w, estilo = "1", 0.0, 0.0, 800.0, dm.ESTILO_CARRIL
+            padre, gx, gy, w, estilo = "1", 0.0, 0.0, 800.0, dm.estilo_carril(1, nombre)
         if self.geo.get("externos"):   # los participantes externos, debajo de los carriles, bajan para hacer sitio
             self.desplazar_abajo(gy, dm.ALTO_CARRIL)
         nuevo_id = self._id_libre("carril-")
@@ -871,8 +871,8 @@ def recolocar(editor, nuevo, drawio):
     """Vuelve a colocar todo el diagrama (nadie lo ha movido a mano), conservando el estilo de lo que ya existía (si ya
     tenía el aspecto actual; uno de antes pasa al actual). Las páginas del proceso (una, o una por tramo) se sustituyen
     por las nuevas; las demás no se tocan."""
-    # lo que alguien retocó (colores…) se conserva; un .drawio del aspecto de antes (sin adornos) pasa al nuevo
-    if any(dm.es_adorno(cell) for _, cell in editor.f.celdas()):
+    # lo que alguien retocó (colores…) se conserva; un .drawio de un aspecto de antes (sin la marca aspecto=lamina) pasa al nuevo
+    if dm.aspecto_actual(editor.f):
         antes = {el.get("id"): cell.get("style") for el, cell in editor.f.celdas()}
     else:
         antes = {}

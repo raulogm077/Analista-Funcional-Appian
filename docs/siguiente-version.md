@@ -169,6 +169,14 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   `https://docs.appian.com/suite/help/26.10/deployments-view.html#review-deployment-requests`). Cancelar un pipeline
   detiene las promociones siguientes, no un despliegue ya empezado. Hace falta un entorno de destino además de
   Indra-spain. [F9]
+- **Diagramas: el ancho de los procesos largos.** Raúl, 27-nov, pidió propuestas. GI-003 (47 pasos, 33 capas) mide
+  6.149 px: casi una columna por capa, a unos 186 px cada una. Medido con el tema lámina en una copia fuera del
+  repositorio: agrupar las cuatro revisiones seguidas de INA en una tarea con nota (regla ya escrita en `SKILL.md`)
+  lo deja en 5.625 px (−8,5 %); además, una sola decisión con cuatro salidas en vez de tres preguntas seguidas, 5.371 px
+  (−13 %, cambia el modelo y lo valida el cliente); con `"tramos": true` sale en 6 páginas de 965 a 1.620 px. Queda por
+  decidir el trabajo en el motor: que dos ramas excluyentes compartan columnas y reservar menos ancho a la etiqueta de
+  una puerta (estimado 10-20 %, sin medir), o colocar los carriles en columnas para una página vertical (cambio grande).
+  Se mide con los 120 procesos al azar y los diagramas reales, como las demás mejoras de colocación. [Raúl decide]
 - **Prototipos: repertorio hasta Appian 26.10 y elección UX.** Contrastar `appian-prototipos` con el catálogo oficial
   de componentes de interfaz hasta 26.10, detectar los ausentes o con soporte parcial y ampliarlos con ejemplos y
   criterios de cuándo usarlos o evitarlos, para disponer de alternativas usables, accesibles y adaptables. Revisar el
