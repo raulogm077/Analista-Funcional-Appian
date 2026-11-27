@@ -402,7 +402,7 @@ _JS_MEDIR_NOTAS = """async (xml) => {
     const lados = {arriba: 0, abajo: 0, izquierda: 0, derecha: 0};
     const centro = {arriba: [caja[0] + caja[2] / 2, caja[1]], abajo: [caja[0] + caja[2] / 2, caja[1] + caja[3]],
                     izquierda: [caja[0], caja[1] + caja[3] / 2], derecha: [caja[0] + caja[2], caja[1] + caja[3] / 2]};
-    for (const el of s.shape.node.querySelectorAll('path')) {
+    for (const el of s.shape.node.querySelectorAll('path, rect')) {
       const st = el.getAttribute('stroke');
       if (!st || st === 'none' || st === 'transparent' || el.getAttribute('visibility') === 'hidden') continue;
       const m = el.getScreenCTM(), largo = el.getTotalLength();
@@ -467,8 +467,8 @@ def nota_larga(tmp):
              if m["letras"][0] < m["caja"][0] - 1 or m["letras"][1] < m["caja"][1] - 1
              or m["letras"][2] > m["caja"][0] + m["caja"][2] + 1 or m["letras"][3] > m["caja"][1] + m["caja"][3] + 1]
     check(len(medidas) == 3 and not fuera, "notas: el texto largo cabe en su caja " + "; ".join(fuera))
-    abiertas = [m for m in medidas if m["lados"]["izquierda"] and not (m["lados"]["arriba"] or m["lados"]["abajo"] or m["lados"]["derecha"])]
-    check(len(abiertas) == 3, "notas: se dibujan como un corchete (sin los lados de arriba, abajo y derecha de punta a punta)")
+    papeles = [m for m in medidas if all(m["lados"][k] for k in ("izquierda", "arriba", "abajo", "derecha"))]
+    check(len(papeles) == 3, "notas: se dibujan como un papel, con sus cuatro lados")
 
 
 def caja_etiqueta(geo, paso, nombre):
