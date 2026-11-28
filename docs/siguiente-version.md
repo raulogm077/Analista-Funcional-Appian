@@ -336,3 +336,212 @@ Se empiezan después de terminar las tareas actuales, por indicación de Raúl d
   Usar también el caso para probar las capacidades y los traspasos del plugin que correspondan y sacar lecciones
   para mejorar el método y el código. Acordar entonces el alcance y el entorno de la demostración, sin interrumpir
   la campaña actual. Conclusiones en `evaluaciones.md` y mejoras pendientes aquí. [persona y sesión]
+
+## 4. Prototipos: lo que pidió un proyecto de prueba (rama `yaroslav/prototipos`)
+
+Lo que salió de usar `appian-prototipos` en un caso real, de octubre a noviembre de 2026, para enseñar un proceso entero
+al cliente. Lo pidió la persona que revisaba el prototipo antes de cada demo. Hasta ahora estaba en la rama del DF del
+cliente; aquí, junto con lo que se habló después. Casi todo se probó en el proyecto, en su script o con un ajuste local
+del HTML construido. Falta llevarlo al plugin: a `design-rules.md`, a los helpers, al runtime y a las plantillas P01
+(listado), P02 (ficha), P05 (tarea) y P07 (diálogo). Cada punto, con su prueba en el selftest. Los ejemplos son
+genéricos (expediente, lote, registro). Es otro pendiente que el del repertorio de componentes de §3, que ya está hecho.
+[prototipos]
+
+### 4.1 Cómo se trabaja con el kit
+
+- **El ajuste local se pierde al reconstruir.** El proyecto cambió con un script propio cómo se dibujan los
+  desplegables, los selectores y las fechas (§4.3), sobre el HTML que deja `build.py`. Al reconstruir sin volver a
+  pasarlo, el prototipo volvió al formato antiguo y la persona lo vio en la revisión. Que el kit traiga ya ese
+  componente (§4.3), o que `build.py` pase solo el ajuste del proyecto si existe (por ejemplo,
+  `prototipo/ajustar_kit.py`).
+- **`capture.py` enlaza las capturas solo en las fichas PAN** del funcional. Las pantallas del DF del cliente van por
+  nombre, y la línea de la imagen la pone el analista. Decidir si `capture.py` las enlaza también por el nombre de la
+  pantalla.
+- **Prototipo desde el DF del cliente.** `appian-prototipos` parte siempre de `funcional.md` (fichas PAN). Con solo el
+  DF del cliente, no dice cómo se hace el inventario: las pantallas de 2.3 por nombre, las actividades de 2.2, la
+  matriz de 2.4.1 y los pendientes. Además, el DF describe las secciones de un registro como desplegables editables,
+  como las piden algunos clientes, mientras la guía del prototipo pide vistas de solo lectura con diálogos. Decidir
+  cuál manda o cómo se dice en el DF. Cuando el cliente ya trabaja con secciones desplegables en sus otros BPM, se
+  mantienen (§4.5) y se dice en el `$uxIgnore`.
+- **Preparar la demo.** Para enseñar el proceso entero en una reunión, el prototipo necesitó cosas que la guía no pide.
+  Valorar un apartado «Preparar la demo» en la skill y que el guion salga del inventario.
+  - «Crear» abre la ficha del registro recién creado, con un enlace a la tarea del primer paso.
+  - Cada acción vuelve con un aviso que dice en qué estado queda (un `map` de la acción al texto), no con un genérico
+    «Acción confirmada».
+  - El histórico de los datos de ejemplo recoge también lo que pasa fuera de la tarea: una aprobación de otro órgano,
+    la firma y el envío a otro sistema.
+  - La bandeja de tareas, de arriba abajo en el orden del flujo, con una tarea por paso, todas en su estado inicial,
+    para recorrerlo en la demo. Si los campos cambian según un tipo (el subtipo), un desplegable en la bandeja para
+    elegirlo, y una tarea por paso y por tipo.
+  - Un registro del primer paso sin nada aportado (sin documentos), para que se vea cómo se genera o se sube lo primero.
+  - Al menos un registro en cada estado final (finalizado, rechazado, cancelado), con su ficha completa.
+  - Lo que hace otro sistema (crear el registro, generar un documento), simulado: el botón queda bloqueado con un aviso
+    de espera unos segundos y después se elige el resultado, sin errores o con un error de ejemplo.
+  - Un guion de la demo con un registro de ejemplo por estado, porque las acciones no cambian los datos.
+- **Los cambios de diseño, también genéricos.** Lo que se pide cambiar en el prototipo de un proyecto se apunta además
+  sin contexto del proyecto, para llevarlo a la skill. Así salió este apartado.
+
+### 4.2 Listados y búsqueda
+
+- **Una columna por dato** y, como mucho, una línea más debajo, con su icono y en gris: el lote bajo el expediente, el
+  plazo bajo la fecha de registro. Nunca celdas de tres o más líneas. Al pasar el ratón por un icono de una celda, un
+  texto dice qué dato es («Lote», «Plazo de vigencia»). Un texto largo de segunda línea (el adjudicatario) se recorta
+  con «…» y se ve entero al pasar el ratón.
+- **Columnas agrupadas por tema** (los datos del expediente, juntos). Un estado que pertenece a otra entidad (el estado
+  del expediente) va en su propia columna, como etiqueta (chip) del mismo color que en la ficha.
+- **Un único formato de identificador** en toda la tabla y en todas las pantallas. Paginación de 10, también en las
+  tablas de las secciones y de los modales.
+- **Un dato que hoy tiene un solo valor** pero puede crecer (un tipo con un único valor en esta fase) va como segunda
+  línea de su columna, no como columna propia, y como filtro.
+- **Una columna «Paso»** junto al estado cuando un mismo estado puede darse en dos pasos del flujo. Sin número delante
+  del paso, y con un paso «Finalizado» al final, porque en el último paso todavía no se ha finalizado.
+- **El mismo nombre en todas las pantallas**: la cabecera de la columna, el filtro, el campo de la ficha y el del modal
+  («Estado registro» en la columna y en el filtro). Las cabeceras de fecha, con su nombre completo («Fecha inicio»,
+  «Fecha registro»), no «Inicio» o «Registro», que en una tabla con varias fechas no se distinguen.
+- **Importes y fechas sin partir**: el «€» en la misma línea que el importe, y la columna con el ancho justo para no
+  cortarse. Dos datos en la misma línea de una celda solo caben si la columna es ancha; con nueve o diez columnas, el
+  segundo dato va en la segunda línea.
+- **La búsqueda, encima del grid**, fuera de los filtros.
+- **Los filtros, en su propia tarjeta plegable** sobre el grid, con «Aplicar filtros» y «Limpiar». Hace falta un helper
+  con el estado editado y el aplicado.
+  - Con muchos filtros, agrupados por tema (registro, expediente, fechas…), y los menos usados tras «Más filtros (N)».
+  - De selección múltiple, con la opción «Todos» o «Todas»: elegirla quita las demás, y elegir otra quita «Todos».
+  - Pueden tener un valor por defecto (por ejemplo, solo los estados en trámite, sin los finales). El estado inicial
+    lo dice el DF.
+  - Con más valores elegidos de los que caben, el campo no crece: ver §4.3.
+- **El histórico en un modal**, con las mismas columnas y el mismo formato que el listado: el identificador como
+  enlace a su ficha, buscador y paginación.
+- **Colores de los estados**, los mismos en el listado y en la ficha, por grupos:
+  - en trabajo, azul;
+  - en revisión, lila, con otro tono que el de «en trabajo» para que no se confundan;
+  - esperando a otro órgano o sistema, amarillo;
+  - aprobado y cerrado, verdes de distinta intensidad;
+  - rechazado, naranja;
+  - cancelado, rojo.
+
+  La ficha del estado lleva además un icono propio.
+
+### 4.3 Desplegables, selectores y fechas como los componentes de Appian
+
+El kit dibuja el desplegable múltiple como fichas que crecen con cada valor, el simple con el `<select>` del navegador
+y la fecha con su calendario nativo. En una revisión con el equipo nada de eso se parecía a los BPM del cliente, que
+usan un componente de Appian visto en un BPM real. Se pide que la skill use siempre, para todos los desplegables y
+selectores, un mismo componente; solo cambia si es de selección única o múltiple. Probado en un proyecto con un ajuste
+local del HTML construido:
+- **El campo** tiene siempre una línea. Enseña los valores elegidos separados por comas, recortados, y en la selección
+  múltiple «•••», que al pasar el ratón enseña todos. Lleva una «x» para quitarlos y la flecha. Sin botón «Listo».
+- **La lista** lleva buscador (en los filtros, con `searchDisplay: "ON"` o con más de 8 opciones) y una marca en cada
+  opción; las elegidas, resaltadas con el color de la marca.
+- **Al elegir:** en la múltiple, las opciones se marcan sin cerrar la lista ni pulsar ningún botón; en la única, elegir
+  la cierra. Se cierra al pulsar fuera.
+- **En los filtros de un listado**, como el filtro de usuario de una lista de registros: la etiqueta dentro del campo,
+  en mayúsculas, y vacío «Cualquiera». En los formularios, la etiqueta encima.
+- **La fecha:** se puede escribir, y el icono abre un calendario propio (mes, días de lunes a domingo, hoy marcado). En
+  los filtros, una sola fecha de rango («desde – hasta»): en el calendario, el primer día marca el inicio y el segundo,
+  el fin.
+- **Selección única:** un selector (picker) de un solo valor parece de selección múltiple (ficha con «×»). Para elegir
+  uno, desplegable con búsqueda; los selectores con búsqueda de un solo valor (`a!pickerFieldCustom`) pasan a
+  desplegables con buscador. Si lo que se puede elegir depende de otro campo (los lotes según el tipo de expediente),
+  un desplegable por caso con `showWhen`.
+- **La lista y el calendario flotan sobre la página.** Dentro de un modal, la lista colocada en absoluto bajo el campo
+  la recortaba el cuerpo del modal y no se veían los últimos valores. Se arregló colocándola fija sobre la página según
+  el campo, hacia arriba si abajo no cabe, y recolocándola al desplazar. La prueba: con el modal abierto, todas las
+  opciones se ven.
+- **Dónde va:** en el runtime (`choiceSingle`, `choiceMulti` y `dateInput` de `appian-kit.js`) y en `design-rules.md`.
+  Lleva su prueba en el selftest: altura constante, «•••» con todos los valores, la lista que no se cierra al marcar en
+  la múltiple y el rango de fechas. Los selectores de usuarios y grupos (`a!pickerFieldUsers`) no se tocaron.
+
+### 4.4 Modales y formularios
+
+- **Ventanas de creación** algo más anchas (MEDIUM_PLUS), con los campos en bloques distinguibles: título más grande con
+  su icono y una línea que separa un bloque de otro; si no, el título parece un campo más. Dos campos cortos que
+  caben (el expediente y el lote), en la misma línea.
+- **Botón principal desactivado** hasta que están los obligatorios, en todos los formularios y modales. Se activa al
+  escribir, sin salir del campo (`refreshAfter: "KEYPRESS"`).
+- **Un campo de sí o no que decide el flujo** («¿pasa por la comisión?»): un desplegable obligatorio y sin valor por
+  defecto, porque con uno por defecto se puede pasar sin querer.
+- **Un valor que sale de otro** (el importe al elegir el código presupuestario): un campo deshabilitado que solo enseña
+  el valor, al lado. El desplegable no repite ese valor en sus opciones.
+- **Opciones que otro sistema no admite.** Las decide ese sistema: si devuelve solo las válidas, solo se ofrecen esas.
+  Si se ofrecen todas, al elegir una que no vale se explica por qué. Lo que no tiene sentido ofrecer (expedientes o
+  lotes no válidos) se filtra. En el caso real se pasó de lo segundo a lo primero cuando el sistema confirmó lo que
+  devolvía: preguntarlo antes de dibujarlo.
+
+### 4.5 La ficha y la tarea de un registro
+
+- **Ficha y tarea, la misma estructura y el mismo ancho.** La sección Acciones solo está en la tarea, que se abre desde
+  la bandeja. La ficha lleva un enlace a la tarea para quien la tiene asignada.
+- **La cabecera:**
+  - una banda con la ficha del estado (su color y su icono, como en el listado), la tarea en curso y, a la derecha, los
+    botones de la cabecera (por ejemplo, «Cancelar»), visibles solo para quien puede usarlos;
+  - debajo, una tarjeta con los datos generales de solo lectura en dos bloques distinguibles, el del registro y el de su
+    entidad asociada (el expediente), y la línea de progreso a todo el ancho;
+  - sin migas de pan, sin datos repetidos en la cabecera y en las secciones, sin subtítulos que no aporten, y sin un
+    dato que hoy tiene un solo valor (el tipo).
+
+  Lo que el usuario marca o edita va en su sección, no en la cabecera. En el caso real se probó también una tarjeta
+  lateral plegable con los datos generales, y se descartó porque quitaba ancho a las secciones.
+- **La línea de progreso:**
+  - las fases son las tareas del flujo, con un paso final «Finalizado», y se nombran por lo que hace el paso, no por el
+    sistema con el que se comunica;
+  - un paso opcional (una revisión previa) solo aparece en los registros que han pasado por él: dos líneas de progreso
+    con `showWhen`, con y sin ese paso.
+- **Secciones desplegables**, como las de los BPM de algunos clientes. En el caso real se hicieron en el script del
+  proyecto, con dos tarjetas y una variable por sección; hace falta un helper:
+  - el título en el color de la marca, con su icono y el chevron; cerrada, solo el texto va en color, no la línea
+    entera;
+  - abierta, la barra decorativa a la izquierda;
+  - dentro, cada bloque en blanco con borde sobre el fondo gris de la sección;
+  - las acciones de la sección («Añadir comentario», «Nueva consulta») en la banda del título, solo con la sección
+    abierta.
+- **Una sección con muchos datos**, agrupada en subsecciones, cada una con su título e icono:
+  - las que están en la misma fila, con la misma altura; crece solo la que enseña un aviso mientras lo enseña;
+  - las partes de una subsección, con un fondo algo más gris que la subsección;
+  - con margen entre el botón de la subsección y sus campos.
+- **Edición por subsección:**
+  - los campos se ven de solo lectura, y «Editar» en cada subsección los abre, con «Guardar» y «Cancelar» en su lugar;
+  - un campo que casi nunca cambia (una ruta de red) se ve como un campo de texto, no como texto plano, con su
+    «Editar»;
+  - el asterisco de obligatorio se ve también en lectura.
+- **Las tarjetas de datos de solo lectura:** la etiqueta en negrita a la izquierda y el valor a la derecha, alineados en
+  columna.
+- **Botones en su sección.** Una acción que produce algo de una sección (generar un documento) va en esa sección,
+  visible aunque esté desactivada, con un aviso que dice qué falta para activarla. Si el documento generado entra solo
+  en la tabla, no hace falta otro botón ni elegir su etiqueta.
+- **Las tablas de una sección** tienen búsqueda y paginación, y la columna «Acciones» al final, con los iconos de
+  editar y borrar juntos. Si solo el autor puede editar o borrar (un comentario), los iconos salen solo en sus filas.
+- **Un total** (la suma de las filas hijas) va como un campo aparte, en negrita, con una ayuda que dice cómo se calcula.
+- **Filas hijas** que se eligen de una lista larga:
+  - «Modificar…» abre un modal con un desplegable múltiple con búsqueda y «Todos», vacío al abrir;
+  - cada fila se edita con su lápiz;
+  - antes de guardar, un aviso dice qué se quita, y se puede quitar todo.
+- **Avisos tras una acción** (de éxito o de error), que se pueden cerrar. Un error que devuelve otro sistema por campo
+  sale junto a su campo, y la subsección se abre para corregirlo.
+
+### 4.6 Las acciones de una tarea
+
+- **Una tarjeta por acción, una debajo de otra y todas del mismo tamaño**, con el icono y el nombre a la izquierda. La
+  elegida, marcada con la barra a la izquierda. En horizontal, las tarjetas con nombres de dos líneas quedaban de
+  distinto alto.
+- **Lo que pide una acción** (un comentario, la persona a la que se envía, un aviso de lo que falta) sale justo debajo de
+  su tarjeta, no al final de todas.
+- **Volver a pulsar la acción elegida la quita.**
+- **«Confirmar»**, el único botón, al final: desactivado hasta tener lo que pide la acción y lo que exige el flujo (por
+  ejemplo, el registro creado en otro sistema).
+- **El nombre de la acción** dice adónde va («Enviar a revisión a Jefe de Departamento»). Si depende de un campo
+  («¿pasa por la comisión?»), cambia con él: «Enviar a la comisión» o «Enviar a firma».
+- **Las acciones que valen en cualquier paso** («Guardar», «Consultar») van en todos. «Consultar» solo envía lo
+  preparado en la sección de consultas y, si no hay nada, avisa.
+
+### 4.7 Bandeja de tareas
+
+- Coherente con la lista de tareas de Appian (`a!queryTaskList`): vistas «Asignadas a mí» y «De mis grupos», tarea,
+  registro, asignada a, estado (aceptada o asignada al grupo), recibida y fecha límite. Las páginas de la documentación
+  sobre la lista de tareas de Sites dieron 404 (`Tasks_Tab`, `task-reports`): buscar las vigentes antes de escribir el
+  patrón.
+- Si el cliente ya tiene una bandeja común en sus otros BPM, se copia su estructura:
+  - contadores por grupo, por usuario y completadas, con el de la vista activa resaltado y pulsable;
+  - búsqueda y búsqueda avanzada plegable;
+  - «Ver las tareas retrasadas», ausencias y exportar;
+  - en el grid, la fecha límite en rojo con «Vencida hace N días» debajo, y una bandera en las retrasadas.
+- Para la demo: §4.1.
