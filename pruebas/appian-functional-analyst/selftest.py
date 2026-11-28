@@ -765,6 +765,61 @@ Versión 1.2: PAN-01
                    len(req) == 2 and (all(l.startswith("✓") for l in req) if not falla else
                                       any(l.startswith("✗ " + falla) and ("PAN-01" in l or "punto 1" in l) for l in req)),
                    out)
+        # «sin efecto» (Raúl, 6-nov): un retoque sobre algo 🔒 no espera al cliente, pero la pieza vuelve a su próxima
+        # validación (✅); si el cliente lo pidió o aprobó («Requiere: Sí», ✔), sigue 🔒
+        # con la misma elegibilidad que la regeneración de issues: declarado, sin topes y de una unidad Aprobada (Codex)
+        ve = tmp / "PAN-01 sin efecto"
+        shutil.copytree(v, ve)
+        cambios_md(ve, {"EV-02": "Aprobada"})
+        fve, infe = ve / "analisis" / "funcional.md", ve / "impacto" / "FU-05.md"
+        efecto = plantilla_inf.replace("Análisis base: versión 1.1 · Estado: aplicado en 1.2",
+                                       "Análisis base: versión 1.1 · Cambio: EV-02 · Estado: aplicado en 1.2 · Efecto: sin "
+                                       "cambio de alcance, esfuerzo ni riesgo")
+        anterior = ve / "versiones" / "v1.1"
+        infe.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| — |"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("«sin efecto» sobre algo 🔒 no pide «Requiere: Sí», pero sí que la pieza deje de estar validada",
+           "✓ «Requiere: Sí» en cada punto" in out and "✗ con «sin efecto», lo 🔒 que cambia" in out and "PAN-01" in out, out)
+        texto_f = fve.read_text(encoding="utf-8")
+        cab = next(l for l in texto_f.splitlines() if l.startswith("**PAN-01") and "🔒" in l)
+        fve.write_text(texto_f.replace(cab, cab.replace("🔒", "✅")), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("con la pieza en ✅ (a la próxima validación del cliente), pasa",
+           "✓ con «sin efecto», lo 🔒 que cambia" in out and "✓ lo 🔒 que cambia pasó" in out, out)
+        fve.write_text(texto_f, encoding="utf-8")
+        infe.write_text(efecto.format(d="✔"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("si el cliente lo aprobó («Requiere: Sí (🔒)», ✔), sigue 🔒", "✓ con «sin efecto», lo 🔒 que cambia" in out, out)
+        # la misma declaración en una unidad que no está Aprobada, o con un tope, no exime: pide «Requiere: Sí» como siempre
+        cambios_md(ve, {"EV-02": "Abierta"})
+        infe.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| — |"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("«sin efecto» en una unidad que no está Aprobada no exime de «Requiere: Sí»",
+           "✗ «Requiere: Sí» en cada punto" in out, out)
+        cambios_md(ve, {"EV-02": "Aprobada"})
+        infe.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| Sí (seguridad) |"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("con un tope («Requiere: Sí (seguridad)»), «sin efecto» no exime de que la pieza siga validada por quien toca",
+           "con «sin efecto»" not in out, out)
+        # por punto (Codex): con columna «Cambio», el retoque de EV-02 (Aprobada) sigue exento aunque otro punto sea de
+        # EV-03 (Abierta, de alcance); y un homónimo fuera de impacto/ no hereda la exención del informe del proyecto
+        cambios_md(ve, {"EV-02": "Aprobada", "EV-03": "Abierta"})
+        por_punto = efecto.format(d="✔").replace(" · Cambio: EV-02", "").replace(
+            "| Revisar también | Requiere | Decisión |", "| Revisar también | Requiere | Decisión | Cambio |").replace(
+            "|---|---|---|---|---|---|---|---|", "|---|---|---|---|---|---|---|---|---|").replace(
+            "| — | Sí (🔒) | ✔ |", "| — | — | ✔ | EV-02 |\n| 2 | ALCANCE+ | Otra columna [FU-05 00:02:00] | PAN-02 | "
+            "PAN-02 con otra columna | — | Sí (alcance) | Pendiente | EV-03 |")
+        infe.write_text(por_punto, encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", infe)
+        ok("por punto: el retoque de la unidad Aprobada sigue exento aunque otro punto sea de otra unidad",
+           "✓ «Requiere: Sí» en cada punto" in out and "✗ con «sin efecto», lo 🔒 que cambia" in out, out)
+        fuera = tmp / "homónimo fuera de impacto" / "FU-05.md"
+        fuera.parent.mkdir(parents=True, exist_ok=True)
+        fuera.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| — |"), encoding="utf-8")
+        infe.write_text(efecto.format(d="✔").replace("| Sí (🔒) |", "| — |"), encoding="utf-8")
+        c, out = corre(S / "comprobar.py", ve, "--anterior", anterior, "--impacto", fuera)
+        ok("un informe homónimo fuera de impacto/ no hereda la exención: pide «Requiere: Sí» como siempre",
+           "✗ «Requiere: Sí» en cada punto" in out, out)
 
         # 4c. La primera decisión de un proyecto (D-01) es un ID nuevo válido
         inf0 = nuevo / "impacto" / "FU-01.md"
@@ -1211,6 +1266,22 @@ Se acepta si:
                     ok("el DF no enseña fuentes, anuladas ni respondidas",
                        "FU-0" not in xml and "HU-11" not in xml and "PC-03" not in xml and "PC-01" in xml
                        and "indice.py" not in xml and "Analista, 2026" not in xml)
+                    # E10 (5-nov): el cliente sabe en la primera página qué contestar; sin preguntas abiertas, nada
+                    s11 = (EJEMPLO / "analisis" / "funcional.md").read_text(encoding="utf-8").split("\n## 11.")[1].split("\n## ")[0]
+                    n = len(re.findall(r"^\|\s*PC-\d+\s*\|", s11, re.M))
+                    texto = re.sub(r"<[^>]+>", "", xml)
+                    pide = re.search(r"Os pedimos contestar (?:la pregunta|las (\d+) preguntas) del apartado «11\. ", texto)
+                    ok("la primera página dice cuántas preguntas abiertas hay y dónde, antes del índice",
+                       n > 0 and pide and int(pide.group(1) or 1) == n and texto.index("Os pedimos") < texto.index("Índice"),
+                       f"{n} abiertas; {texto[:400]}")
+                    sin = tmp / "DF sin preguntas"
+                    shutil.copytree(EJEMPLO, sin)
+                    f = sin / "analisis" / "funcional.md"
+                    f.write_text(re.sub(r"^\|\s*(PC-\d+)\s*\|", r"| ~~\1~~ |", f.read_text(encoding="utf-8"), flags=re.M),
+                                 encoding="utf-8")
+                    d = docx_de(sin, tmp / "sin-preguntas.docx")
+                    ok("sin preguntas abiertas, la primera página no pide contestar nada",
+                       d is not None and "Os pedimos" not in zipfile.ZipFile(d).read("word/document.xml").decode("utf-8"))
                     toc = re.search(r"<w:sdt>.*?</w:sdt>", xml, re.S)
                     ok("el índice del DF lleva sus entradas (soffice no rellena un campo vacío)",
                        toc is not None and "1. Objetivo y alcance" in toc.group(0) and "HU-07 — " in toc.group(0),
@@ -1372,7 +1443,8 @@ Se acepta si:
     for nombre in ("test_automejora.py", "test_ingesta.py", "test_dependencias.py", "test_secuenciacion.py",
                    "test_permisos.py", "test_subtareas.py", "test_revision_inicio.py", "test_revision_consumidores.py",
                    "test_tablas_proyecto.py", "test_huella_dt.py", "test_otra_unidad.py", "test_alcance_perfiles.py",
-                   "test_reparto_tecnico.py", "test_estado_validado.py"):
+                   "test_reparto_tecnico.py", "test_estado_validado.py", "test_comprobaciones_14.py",
+                   "test_pc_una_pregunta.py", "test_sin_efecto.py"):
         prueba = AQUI / nombre
         if prueba.is_file():
             c, out = corre(prueba)
@@ -2513,8 +2585,9 @@ def pruebas_unidades(tmp):
     ok("lo esperado dice de qué issue y de qué versión es, el tipo de cada objeto y, del record type que se modifica, "
        "solo sus campos nuevos",
        re.fullmatch(r"[0-9a-f]{12}", esp.get("_issue", {}).get("version", "")) is not None
+       and re.fullmatch(r"[0-9a-f]{12}", esp.get("_issue", {}).get("estructura", "")) is not None
        and esp == {"_issue": {"id": "ISS-01", "unidad": "EV-02", "version": esp["_issue"]["version"], "pruebas": True,
-                             "ambito": esp["_issue"]["ambito"]},
+                             "estructura": esp["_issue"]["estructura"], "ambito": esp["_issue"]["ambito"]},
                    "DEM Solicitud": {"tipo": "recordType", "campos": [{"nombre": "firmaRevisor", "tipo": "Text"}]},
                    "DEM_ER_Firma": {"tipo": "expressionRule"}, "DEM_RevisionForm": {"tipo": "interface"},
                    "DEM_SolicitudForm": {"tipo": "interface"}}, json.dumps(esp, ensure_ascii=False))
@@ -3142,10 +3215,12 @@ def pruebas_issues(tmp):
        and "- `HU-04.1` La tarea aparece a todos los técnicos de la unidad gestora y desaparece para los demás cuando uno "
            "la acepta. → Dos técnicos; aceptar la tarea" in i2 and "## Escenarios (ISS-02.feature) y cómo se comprueban" in i2,
        i2)
-    feature = lee(d / "ISS-02.feature")
+    con_notas = lee(d / "ISS-02.feature")
+    feature = re.sub(r"(?m)^[ ]*# Técnico §14: .*\n", "", con_notas)     # cómo lo prueba §14, como comentario, para el QA
     ok("el .feature: una sola Característica y una Regla por historia; el criterio con dado, cuando y entonces, en sus tres "
-       "pasos; el que aún no los tiene pasa tal cual, con aviso",
-       feature.startswith("# language: es\nCaracterística: EV-01 ISS-02 Registrar una solicitud; Subsanar una solicitud y 3 requisitos más\n\n  Regla: HU-01 Registrar "
+       "pasos; el que aún no los tiene pasa tal cual, con aviso; cada escenario, con lo que dice §14 como comentario",
+       "    Escenario: HU-03.1\n      # Técnico §14: SAIL CLI (QA de la unidad): Subsanar una devuelta\n" in con_notas
+       and feature.startswith("# language: es\nCaracterística: EV-01 ISS-02 Registrar una solicitud; Subsanar una solicitud y 3 requisitos más\n\n  Regla: HU-01 Registrar "
                           "una solicitud\n\n    Escenario: HU-01.1\n      * Sin memoria o sin plano")
        and "\n  Regla: HU-03 Subsanar una solicitud\n\n    Escenario: HU-03.1\n      Dada una solicitud devuelta\n      Cuando "
            "la unidad solicitante la reenvía\n      Entonces vuelve a «En revisión» con el mismo número\n" in feature
@@ -3342,9 +3417,10 @@ def pruebas_issues(tmp):
        and "Reaplicar" not in e1 + e2 and "- **HU-04 Firmar la revisión** (nueva)" in e2
        and "El técnico no cambia para esta issue con EV-02. Lo que ya dice de sus objetos:" in e3
        and "- §7 · Pantalla: PAN-02 · Qué es en Appian: `DEM_SolicitudForm`, formulario de tarea" in e3, e1 + e2 + e3)
-    ok("una issue con una sola historia lleva el .feature de esa historia, sin «Regla»",
+    ok("una issue con una sola historia lleva el .feature de esa historia, sin «Regla», con lo que dice §14 como comentario",
        lee(dv / "ISS-03.feature") == "# language: es\nCaracterística: HU-02 Corregir y reenviar una solicitud devuelta\n\n"
-       "  Escenario: HU-02.2\n    * Al reenviarla vuelve a «Enviada» con el mismo número y sin la firma anterior.\n",
+       "  Escenario: HU-02.2\n    # Técnico §14: Corregir una devuelta y reenviarla\n"
+       "    * Al reenviarla vuelve a «Enviada» con el mismo número y sin la firma anterior.\n",
        lee(dv / "ISS-03.feature"))
     verifica(v, "EV-02", "ISS-01")
     verifica(v, "EV-02", "ISS-02")

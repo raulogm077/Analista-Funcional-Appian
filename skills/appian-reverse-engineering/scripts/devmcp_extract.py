@@ -106,7 +106,12 @@ def now_iso() -> str:
 
 
 def terminal_auth_error(error: str | None) -> bool:
-    """Errores de acceso o login, no pruebas de que un objeto falte. Formas del cliente HTTP y del login browser."""
+    """Errores de acceso o login, no pruebas de que un objeto falte. Formas del cliente HTTP y del login browser.
+    El 403 de getRecordEventsConfig (Dev MCP 26.9.10) en un record type sin eventos («Record events not configured
+    for this record type») es una respuesta del objeto, no un login caducado: no para. Solo ese; cualquier otro 401 o
+    403, aunque diga «not configured», sigue parando."""
+    if re.fullmatch(r"(?i)\s*API error \(HTTP 403\): Record events not configured for this record type\.?\s*", error or ""):
+        return False   # el mensaje entero: dentro de otro error (un 401, un login caducado) sigue parando
     return bool(re.search(
         r"(?i)\bHTTP(?:/\d(?:\.\d)?)?\s*(?:status|error)?\s*[:=]?\s*[\"']?(?:401|403)\b"
         r"|\bstatus(?:_code| code)?\s*[:=]\s*(?:401|403)\b"
@@ -155,6 +160,8 @@ class Policy:
         self.evaluation = set(d["evaluationVerbs"])
         self.read = set(d["readVerbs"])
         self.exceptions = [(re.compile(x["pattern"]), x["role"], x["reason"]) for x in d["allowExceptions"]]
+        # metadatos con una palabra que, por sí sola, los excluiría (los filtros de usuario de un record type)
+        self.metadata = [(re.compile(x["pattern"]), x["reason"]) for x in d.get("metadataExceptions", [])]
         self.excludes = [(re.compile(x["pattern"]), x["reason"]) for x in d["excludePatterns"]]
         self.exclude_tokens = d.get("excludeTokens", [])
         self.roles = [(r["role"], set(r["tokens"])) for r in d["roles"]]
@@ -210,6 +217,9 @@ class Policy:
         hit = self.interaction.intersection(toks)
         if hit:
             return False, f"Interaccion con la interfaz ('{sorted(hit)[0]}').", None
+        for rx, reason in self.metadata:
+            if rx.search(name) or rx.search(unido):
+                return True, reason, None
         motivo = self.excluded_by_tokens(toks)
         if motivo:
             return False, motivo, None
@@ -2326,7 +2336,7 @@ async def cmd_verificar(args) -> int:
     if any("permisosInicio" in q or tipo_de_objeto(q.get("tipo")) == "processmodel"
            or any("visibilidad" in a for a in q.get("acciones", [])) for q in quiere.values()):
         print("  · Permisos: se compara configuración declarada; el acceso efectivo exige QA con cada rol.")
-    print("  · No se comparan relaciones, seguridad de registro, miembros de grupos, datos ni vistas por defecto ocultas: "
+    print("  · No se comparan relaciones, seguridad de registro, filtros de usuario, miembros de grupos, datos ni vistas por defecto ocultas: "
           "lo que la issue pida de eso se lee aparte (getRecordType) o lo prueba el QA.")
     for linea in resumen_de_pruebas(resultado.get("pruebas")):
         print(linea)
@@ -2371,7 +2381,8 @@ async def cmd_regresion(args) -> int:
         print(f"Regresion sin hacer: {resultado['motivo']}. Detalle: {destino}")
         return EXIT_SIN_PRUEBAS
     print(f"Regresion de {app_obj.get('name')}: {resultado['objetos']} reglas e interfaces "
-          f"({len(resultado['sinCasos'])} sin casos), {resultado['casos']} casos: {resultado['pasan']} pasan, "
+          f"({len(resultado['sinCasos'])} sin casos{': ' + ', '.join(resultado['sinCasos']) if resultado['sinCasos'] else ''}), "
+          f"{resultado['casos']} casos: {resultado['pasan']} pasan, "
           f"{resultado['fallan']} fallan, {resultado['noEvaluables']} no evaluables ({resultado['segundos']} s). "
           f"Detalle: {destino}")
     for linea in resumen_de_pruebas(resultado, solo_fallos=True)[1:]:

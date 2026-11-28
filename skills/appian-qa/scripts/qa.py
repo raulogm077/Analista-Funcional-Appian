@@ -5,6 +5,8 @@
                  repite los guiones de cada unidad (sin <U>, los de todas las de qa/) y escribe qa/<U>/resultado.json
   qa.py sesiones <host> <usuario> … [--sesiones <carpeta> …]
                  la carpeta de sesión de SAIL CLI (--data-dir) de cada cuenta en este equipo, o cómo entrar si no la hay
+  qa.py a-mano   <p> <U> <escenario> (--falla "<motivo>" | --pasa) --quien <nombre> [--por-que "<sin guion porque…>"]
+                 lo que una persona miró de un escenario que no puede llevar guion; un «falla» bloquea como un guion
 
 El guion y el resultado, en SKILL.md («El guion» y «Repetir»). La sesión de cada cuenta se busca por su usuario y su host
 en los session.json de las carpetas de SAIL CLI (--sesiones, o $SAIL_HOME y ~/.sail); el script no entra ni sale. Solo
@@ -269,6 +271,50 @@ def componentes(nodo):
             yield from componentes(v)
 
 
+# los campos que, vacíos, llegan sin «value» en el --json (capturado en real el 5-nov): uno nuevo entra aquí solo con su
+# captura; otro tipo sin «value» sigue siendo NADA, y el paso falla (el lado seguro)
+VACIOS_SIN_VALUE = {"RadioButtonField", "MultipleFileUploadWidget"}
+
+
+def valor_de(d, etiqueta):
+    """El valor del campo con esa etiqueta en una respuesta de SAIL CLI (su ui o lo que cambió), o NADA si no está. Un
+    campo de VACIOS_SIN_VALUE que está pero sin «value» está vacío (None). Un layout (FieldLayout, SectionLayout2), que
+    lleva la misma etiqueta, no es el campo: ni su «value» ni su falta cuentan (revisión de Codex)."""
+    vacio = False
+    for c in componentes([(d or {}).get("ui"), (d or {}).get("changed")]):
+        if "Layout" in c["#t"] or norma(c.get("label", "")) != norma(etiqueta):
+            continue
+        if "value" in c:
+            return c["value"]
+        vacio = vacio or c["#t"] in VACIOS_SIN_VALUE
+    return None if vacio else NADA
+
+
+NADA = object()
+
+
+def puso_un_valor(args, antes, d):
+    """Si una orden «interact» con pares etiqueta y valor dejó alguno de esos campos con el valor pedido, cuando en la
+    página de antes tenía otro: entonces sí cambió algo, aunque SAIL CLI diga movedNothing. Pasa en la primera orden tras
+    abrir un formulario de inicio, que devuelve el formulario entero en «changed» y «changedFields» vacío (campaña del
+    5-nov). Hace falta ver el valor de antes (si no se sabe, no prueba nada) y que ahora sea el pedido, según su tipo: un
+    texto igual al tecleado, un número igual al índice o, en una subida, un fichero con el nombre del que se sube; null no
+    es «None». Poner el valor que ya tenía sigue siendo no cambiar nada (revisión de Codex). Un campo vacío (opción sin
+    elegir, subida sin fichero) también es un valor de antes visto: SAIL CLI devuelve igual movedNothing (QA del 5-nov)."""
+    def es(v, valor):
+        if isinstance(v, str):
+            return v == valor
+        if isinstance(v, list):     # una subida: [{fileName, extension, documentId…}]
+            nombre = pathlib.Path(valor).name
+            return any(isinstance(f, dict) and f"{f.get('fileName')}.{f.get('extension')}" == nombre for f in v)
+        return isinstance(v, int) and not isinstance(v, bool) and str(v) == valor
+    for etiqueta, valor in zip(args[0::2], args[1::2]):
+        ahora, previo = valor_de(d, etiqueta), valor_de(antes, etiqueta)
+        if ahora is not NADA and previo is not NADA and es(ahora, valor) and not es(previo, valor):
+            return True
+    return False
+
+
 def escalar_json(v):
     return type(v) in (str, int, bool, type(None)) or (type(v) is float and math.isfinite(v))
 
@@ -351,10 +397,28 @@ def sail_cli():
     return [ruta] if ruta else None
 
 
+RX_FICHERO = re.compile(r"\{fichero:([A-Za-z0-9][A-Za-z0-9._-]*)\}")    # el valor entero; un nombre, sin rutas
+
+
+def ruta_fichero(valor, base):
+    """La ruta de {fichero:<nombre>} dentro de qa/<U>/ficheros/, o None si el valor no es solo ese marcador o la ruta,
+    resuelta (con enlaces), sale de esa carpeta."""
+    m = RX_FICHERO.fullmatch(valor)
+    if not m or ".." in m.group(1):
+        return None
+    carpeta = pathlib.Path(base).resolve()
+    ruta = (carpeta / m.group(1)).resolve()
+    return ruta if ruta.parent == carpeta else None
+
+
 def sustituye(x, valores):
     if isinstance(x, str):
+        if "_ficheros" in valores and x.startswith("{fichero:"):    # para subirlo: la ruta de qa/<U>/ficheros/
+            ruta = ruta_fichero(x, valores["_ficheros"])
+            return str(ruta) if ruta else x
         for k, v in valores.items():
-            x = x.replace("{" + k + "}", v)
+            if not k.startswith("_"):
+                x = x.replace("{" + k + "}", v)
         return x
     if isinstance(x, list):
         return [sustituye(v, valores) for v in x]
@@ -408,7 +472,7 @@ def defectos(g, nombre):
     mal = [f"falta «{k}»" for k in ("escenario", "dice", "host", "site", "roles") if not g.get(k)]
     mal += [f"«{k}» no es una clave del guion" for k in g if k not in CLAVES]
     if g.get("escenario") and pathlib.Path(nombre).stem != g["escenario"]:
-        mal.append(f"el fichero se llama {nombre} y el escenario es {g['escenario']}")
+        mal.append(f"el fichero se llama {pathlib.Path(nombre).name} y el escenario es {g['escenario']}")
     roles = g.get("roles") if isinstance(g.get("roles"), dict) else {}
     afirma = False
     for parte in PARTES:
@@ -430,6 +494,11 @@ def defectos(g, nombre):
                 ids = [x for x in orden[1:] if isinstance(x, str) and RX_ID.match(x)]
                 if ids:
                     mal.append(f"{donde}: «{ids[0]}» es un _cId o una ref que cambia en cada carga; usa la etiqueta")
+                malos = [x for x in orden[1:] if isinstance(x, str) and "{fichero:" in x
+                         and ruta_fichero(x, pathlib.Path(nombre).parent / "ficheros") is None]
+                if malos:      # no se manda a SAIL CLI una ruta que sale de qa/<U>/ficheros/
+                    mal.append(f"{donde}: «{malos[0]}»: el fichero va solo, como valor entero, con un nombre de "
+                               "qa/<U>/ficheros/ sin rutas ({fichero:certificado.pdf})")
     for parte in PARTES:
         for k, p in enumerate(g.get(parte) or [], 1):
             if not isinstance(p, dict) or "gasta" not in p:
@@ -462,7 +531,7 @@ class Recorrido:
     def rol(self, p):
         return p.get("rol") or next(iter(self.g["roles"]))
 
-    def sail(self, rol, orden, espera=None):
+    def sail(self, rol, orden, espera=None, antes=None):
         sub, args = ORDENES[orden[0]], [str(x) for x in orden[1:]]
         if sub == "load" and "--fresh" not in args:
             args.append("--fresh")
@@ -490,7 +559,8 @@ class Recorrido:
         rechazo = [norma(x) for x in espera.get("texto") or []] if espera else []
         validaciones = [norma(t) for t in textos(d.get("validations"))]
         # sin cambios por una validación que rechaza es lo esperado solo si lo esperado es ese rechazo
-        if d.get("movedNothing") and not any(x in v for x in rechazo for v in validaciones):
+        if d.get("movedNothing") and not any(x in v for x in rechazo for v in validaciones) \
+                and not (sub == "interact" and puso_un_valor(args, antes, d)):
             raise Falla("el servidor aceptó la orden y no cambió nada")
         return sub, d
 
@@ -516,7 +586,7 @@ class Recorrido:
                                 "se puede escribir (dos enlaces con el mismo texto son también un problema de "
                                 "accesibilidad)")
         espera = p.get("espera") or {}
-        _, d = self.sail(rol, orden, espera)
+        _, d = self.sail(rol, orden, espera, antes=pagina)
         # lo que ha hecho este rol desde su último load: si solo es mirar (cargar, buscar, marcar una fila), se puede
         # volver a hacer cuando aún no se ve lo esperado, porque el proceso puede no haber terminado
         hechas = [orden] if ORDENES[orden[0]] == "load" else self.tras_carga.get(rol, []) + [orden]
@@ -582,19 +652,23 @@ def excepciones_qa(raiz, uid, m, iss):
     return excepciones
 
 
+def versiones_de(uid, m, iss):
+    """{issue: versión} de las issues de la unidad, o {} si no se pueden calcular."""
+    if m is None or iss is None:
+        return {}
+    try:
+        ctx = iss.un.Contexto(m)
+        return {i.id: i.version for i in iss.calcula(m, ctx, uid).issues} if uid in ctx.por_id else {}
+    except iss.NoSePuede:
+        return {}
+
+
 def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
     """Repite los guiones de una unidad (con `solo`, nada más que esos escenarios; los demás se quedan como estaban) y
     escribe su resultado. Si SAIL CLI deja de responder, aquí o antes (`parado`), no repite los guiones que quedan.
     Devuelve (resultado, lo repetido esta vez, líneas para la consola, dónde dejó de responder SAIL CLI o None)."""
-    versiones_issues = {}
     _, iss, _ = analisis(raiz)
-    if m is not None and iss is not None:
-        try:
-            ctx = iss.un.Contexto(m)
-            if uid in ctx.por_id:
-                versiones_issues = {i.id: i.version for i in iss.calcula(m, ctx, uid).issues}
-        except iss.NoSePuede:
-            pass
+    versiones_issues = versiones_de(uid, m, iss)
     carpeta = pathlib.Path(raiz) / CARPETA / uid
     fichero = carpeta / RESULTADO
     previo = lee_json(fichero) or {}
@@ -614,7 +688,7 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         if esc in del_feature:
             entrada["issue"] = del_feature[esc]["issue"]
         g = lee_json(guiones[esc])
-        mal = ["no es un JSON"] if not isinstance(g, dict) else defectos(g, guiones[esc].name)
+        mal = ["no es un JSON"] if not isinstance(g, dict) else defectos(g, guiones[esc])   # la ruta: los ficheros se validan donde se usan
         # lo que dice hoy el escenario: el funcional, que una unidad posterior puede haber cambiado a propósito; sin
         # funcional, el .feature
         hoy = lo_que_dice_hoy(m, esc)
@@ -629,7 +703,7 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         elif parado:
             entrada = sin_repetir(antes.get(esc) or entrada, f"no se ha repetido: {parado}", no_responde=True)
         else:
-            valores = {"pasada": unica(), "hoy": datetime.date.today().isoformat()}
+            valores = {"pasada": unica(), "hoy": datetime.date.today().isoformat(), "_ficheros": str(carpeta / "ficheros")}
             try:
                 Recorrido(g, cuentas, valores).repite()
                 entrada["resultado"] = "pasa"
@@ -660,8 +734,11 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
                 entrada["versionIssue"] = versiones_issues[entrada["issue"]]
         entrada = {"resultado": entrada.pop("resultado"), **entrada}   # lo primero que se lee
         nuevos[esc] = repetidos[esc] = entrada
+    # lo que miró una persona (qa.py a-mano) va aparte y no lo toca ningún guion: ni uno nuevo ni un «pasa» lo tapan
+    a_mano = previo.get("aMano") if isinstance(previo.get("aMano"), dict) else {}
     resultado = {"unidad": uid, "generadoEn": ahora(), "escenarios": nuevos,
-                 "sinGuion": [e for e, d in del_feature.items() if e not in guiones and not d["caso"]]}
+                 "sinGuion": [e for e, d in del_feature.items() if e not in guiones and e not in a_mano and not d["caso"]],
+                 **({"aMano": a_mano} if a_mano else {})}
     escribe(fichero, json.dumps(resultado, ensure_ascii=False, indent=1) + "\n")
     cuenta = lambda r: sum(1 for e in repetidos.values() if e.get("resultado") == r and not e.get("sinRepetir"))
     sin = sum(1 for e in repetidos.values() if e.get("sinRepetir"))
@@ -692,6 +769,14 @@ def repite_unidad(raiz, uid, solo, cuentas, m=None, parado=None):
         L.append(f"  {esc} · lo prueba un caso de prueba de regla (técnico §14), no el QA: aquí no se da por probado")
     for esc in resultado["sinGuion"] if not solo else []:
         L.append(f"  {esc} · sin guion: lo recorre QA (appian-qa)")
+    for esc, e in a_mano.items():
+        if esc not in del_feature:      # el escenario ya no está en el análisis: se guarda, pero no es un fallo de ahora
+            L.append(f"  {esc} · anotado a mano ({e.get('resultado')}, {e.get('quien')}), pero ya no está en el análisis "
+                     f"de {uid}: se conserva como histórico y no cuenta")
+            continue
+        L.append(f"  {esc} · {e.get('resultado')} a mano ({e.get('quien')}, {str(e.get('fecha'))[:10]}; {e.get('porQue')})"
+                 + (f": {e.get('motivo')}" if e.get("motivo") else "") + "; no lo repite ningún script"
+                 + (f" · {e['issue']} sigue pendiente" if e.get("resultado") == "falla" and e.get("issue") else ""))
     if parado and not de_antes:
         L.append(f"  {parado}: se ha parado ahí, sin repetir lo que quedaba; repítelo cuando responda")
     return resultado, repetidos, L, parado
@@ -727,7 +812,8 @@ def repetir(a):
     cuentas = sesiones(a.sesiones)
     codigo, parado = 0, None
     for uid in unidades:
-        if not any(f.name != RESULTADO for f in (raiz / CARPETA / uid).glob("*.json")):
+        hay_mano = bool((lee_json(raiz / CARPETA / uid / RESULTADO) or {}).get("aMano"))   # se enseña también sin guiones
+        if not hay_mano and not any(f.name != RESULTADO for f in (raiz / CARPETA / uid).glob("*.json")):
             esc = escenarios_de(raiz, uid)
             if esc and all(e["caso"] for e in esc.values()):      # no espera guion: los prueba un caso de prueba
                 print(f"{uid} · sus {len(esc)} escenarios los prueba un caso de prueba de regla (@caso-de-prueba): "
@@ -736,16 +822,63 @@ def repetir(a):
             print(f"{uid} · sin guiones en {CARPETA}/{uid}/: su QA está por hacer (appian-qa)")
             codigo = peor(codigo, 2)
             continue
-        _, repetidos, L, parado = repite_unidad(raiz, uid, set(a.escenario or []), cuentas, m, parado)
+        resultado, repetidos, L, parado = repite_unidad(raiz, uid, set(a.escenario or []), cuentas, m, parado)
         print("\n".join(L))
         if a.escenario and not repetidos:
             print(f"  {uid} no tiene guion de {', '.join(a.escenario)}")
             codigo = peor(codigo, 2)
-        if any(e.get("resultado") == "falla" and not e.get("sinRepetir") for e in repetidos.values()):
+        vigentes = escenarios_de(raiz, uid)     # lo anotado a mano de un escenario que ya no está no cuenta
+        a_mano_falla = any(e.get("resultado") == "falla" for x, e in (resultado.get("aMano") or {}).items() if x in vigentes)
+        if a_mano_falla or any(e.get("resultado") == "falla" and not e.get("sinRepetir") for e in repetidos.values()):
             codigo = peor(codigo, 1)
         elif any(e.get("sinRepetir") or e.get("resultado") == POR_TERMINAR for e in repetidos.values()):
             codigo = peor(codigo, 2)
     return codigo
+
+
+def a_mano(a):
+    """Lo que una persona miró de un escenario, o de la parte que su guion no cubre (SAIL CLI no la hace o no la ve):
+    un «falla» devuelve su issue a pendiente como un guion que falla; un «pasa», tras volver a mirarlo, retira solo ese
+    fallo. Va aparte del resultado del guion, y ninguno tapa al otro; no lo repite ningún script: `repetir` lo conserva
+    y lo enseña (SKILL.md, «A mano»)."""
+    raiz = pathlib.Path(a.proyecto)
+    uid, esc = a.unidad, a.escenario
+    carpeta = raiz / CARPETA / uid
+    if a.falla is not None and not a.falla.strip() or not a.quien.strip() or a.por_que is not None and not a.por_que.strip():
+        print("--falla, --quien y --por-que no pueden ir vacíos: un fallo sin motivo no se anota (ni se lee como «pasa»)")
+        return 2
+    del_feature = escenarios_de(raiz, uid)
+    if esc not in del_feature:
+        print(f"{esc} no es un escenario de {uid} (construccion/{uid}/*.feature)")
+        return 2
+    if del_feature[esc]["caso"]:
+        print(f"{esc} lo prueba un caso de prueba de regla (técnico §14), no el QA")
+        return 2
+    fichero = carpeta / RESULTADO
+    previo = lee_json(fichero) or {}
+    manos = previo.get("aMano") if isinstance(previo.get("aMano"), dict) else {}
+    por_que = a.por_que or (manos.get(esc) or {}).get("porQue")
+    if not por_que:
+        print(f"Di qué mira a mano de {esc} y por qué no lo cubre un guion, con --por-que (p. ej. «la descarga del "
+              "certificado: SAIL CLI no sigue un enlace de descarga»)")
+        return 2
+    m, iss, _ = analisis(raiz)
+    entrada = {"resultado": "falla" if a.falla is not None else "pasa", **({"motivo": a.falla.strip()} if a.falla is not None else {}),
+               "issue": del_feature[esc]["issue"], "quien": a.quien.strip(), "porQue": por_que.strip(), "fecha": ahora()}
+    version = versiones_de(uid, m, iss).get(entrada["issue"])
+    if version:
+        entrada["versionIssue"] = version
+    manos[esc] = entrada
+    escs = previo.get("escenarios") if isinstance(previo.get("escenarios"), dict) else {}
+    resultado = {"unidad": uid, "generadoEn": previo.get("generadoEn") or ahora(), "escenarios": escs,
+                 "sinGuion": [e for e, d in del_feature.items() if not d["caso"] and not (carpeta / f"{e}.json").is_file()
+                              and e not in manos],
+                 "aMano": manos}
+    carpeta.mkdir(parents=True, exist_ok=True)
+    escribe(fichero, json.dumps(resultado, ensure_ascii=False, indent=1) + "\n")
+    print(f"{esc} · {entrada['resultado']} a mano ({a.quien})"
+          + (f": {a.falla} · {entrada['issue']} vuelve a pendiente" if a.falla is not None else "") + f" · {fichero.as_posix()}")
+    return 1 if a.falla is not None else 0
 
 
 def ver_sesiones(a):
@@ -773,8 +906,17 @@ def main():
     s.add_argument("host")
     s.add_argument("usuarios", nargs="+")
     s.add_argument("--sesiones", action="append")
+    h = sub.add_parser("a-mano", help="lo que una persona miró de un escenario que no puede llevar guion")
+    h.add_argument("proyecto")
+    h.add_argument("unidad", metavar="U")
+    h.add_argument("escenario")
+    q = h.add_mutually_exclusive_group(required=True)
+    q.add_argument("--falla", metavar="MOTIVO", help="lo que vio que falla: su issue vuelve a pendiente")
+    q.add_argument("--pasa", action="store_true", help="lo miró y pasa")
+    h.add_argument("--quien", required=True, help="quién lo miró")
+    h.add_argument("--por-que", dest="por_que", help="por qué no puede llevar guion (la primera vez)")
     a = ap.parse_args()
-    return repetir(a) if a.cmd == "repetir" else ver_sesiones(a)
+    return {"repetir": repetir, "sesiones": ver_sesiones, "a-mano": a_mano}[a.cmd](a)
 
 
 if __name__ == "__main__":

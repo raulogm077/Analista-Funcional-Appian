@@ -43,6 +43,13 @@ def carga(p):
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
 
+def corta(texto: str, n: int = 100) -> str:
+    """El texto hasta n caracteres sin partir una palabra; si se corta, termina en «…»."""
+    if len(texto) <= n:
+        return texto
+    return texto[:n].rsplit(" ", 1)[0].rstrip(" ,;:.") + "…"
+
+
 def celda(v):
     if v is None or v == "":
         return "—"
@@ -137,7 +144,7 @@ def generar(salida, inv, grafo, report, previo):
             desc = localized(o.get("description"))
             para = guardado.get("Para qué", "—")
             if para in ("—", "") or "{{" in para:
-                para = celda(desc)[:100] if isinstance(desc, str) and desc else "—"
+                para = corta(celda(desc)) if isinstance(desc, str) and desc else "—"
             if para == "—":
                 faltan.append(o.get("name", o["uuid"]))
             vals = {"Origen": o.get("sourceType"), "Tabla": o.get("tableName"), "Campos": o.get("fieldCount"),

@@ -37,8 +37,9 @@ python3 <skill>/scripts/leer_fuentes.py <ficheros o carpetas> -o <proyecto>/fuen
   ```
   La aprobación del jefe de proyecto es una FU de tipo Aprobación (por correo, de tipo Correo), y el informe de
   impacto la cita en la Decisión: «✔ FU-09». Si tomas una decisión sin respuesta (sesión desatendida, nadie contesta),
-  la pieza queda 🔶 con «(pendiente: PC-nn)» y una PC «Supuesto: ¿confirmas que…?», con la opción aplicada primero en
-  «Opciones»; solo en lo que no requiere aprobación: lo que la requiere queda «Pendiente» (`actualizacion.md` §5).
+  la pieza queda 🔶 con «(pendiente: PC-nn)» y entra en la fila de supuestos del funcional (`funcional-plantilla.md`
+  §11), o en su propia PC «Supuesto: ¿confirmas que…?» si cambia la solución, el alcance o una regla de negocio, con la
+  opción aplicada primero en «Opciones»; solo en lo que no requiere aprobación: lo que la requiere queda «Pendiente» (`actualizacion.md` §5).
 - Aplicación existente: `as-is/` entra como una sola fuente, con el índice de sus documentos y sin su extracción en
   bruto; la propuesta de refactorización, como cualquier fichero. Primero ellas, que son la base:
   ```bash

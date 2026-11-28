@@ -252,6 +252,49 @@ def test_hallazgo_que_no_existe(tmp_path):
     assert len(errores) == 1 and "04-seguridad-grupos.md:3" in errores[0] and "H-SEG-09" in errores[0], errores
 
 
+def test_homonimos_y_patrones(tmp_path):
+    """Dos objetos con el mismo nombre (la aplicación y su site) tienen cada uno su ficha, y la evidencia de cualquiera
+    de los dos vale; un patrón con asterisco («DEM_ESTADO_*») no es un nombre inventado (F6, 6-nov)."""
+    texto = ("# Arquitectura\n\n| Objeto | Certeza | Evidencia |\n|---|---|---|\n"
+             "| `DEM Solicitud` | ✅ | [`mcp:recordType/DEM Solicitud#fields`](./anexo/recordType/DEM_Solicitud.md) |\n"
+             "| `DEM Solicitud` | ✅ | [`mcp:site/DEM Solicitud#pages`](./anexo/site/DEM_Solicitud.md) |\n\n"
+             "Los estados son las constantes `DEM_ESTADO_*`, y DEM_ESTADO_* en el texto.\n")
+    salida = as_is(tmp_path, {"02-arquitectura.md": texto, "anexo/site/DEM_Solicitud.md": "# DEM Solicitud (site)\n"})
+    inv = salida / "datos" / "inventario.json"
+    datos = json.loads(inv.read_text(encoding="utf-8"))
+    datos["objetos"].append({"nombre": "DEM Solicitud", "tipo": "site", "uuid": "u-s", "anexo": "anexo/site/DEM_Solicitud.md",
+                             "tambien": []})
+    inv.write_text(json.dumps(datos, ensure_ascii=False), encoding="utf-8")
+    errores, _ = comprueba(salida)
+    assert errores == [], errores
+    # cruzadas: el tipo que dice la evidencia manda (Codex, 6-nov)
+    cruzado = ("# Arquitectura\n\n| Objeto | Certeza | Evidencia |\n|---|---|---|\n"
+               "| `DEM Solicitud` | ✅ | [`mcp:recordType/DEM Solicitud#fields`](./anexo/site/DEM_Solicitud.md) |\n"
+               "| `DEM Solicitud` | ✅ | [`mcp:site/DEM Solicitud#pages`](./anexo/recordType/DEM_Solicitud.md) |\n")
+    (salida / "02-arquitectura.md").write_text(cruzado, encoding="utf-8")
+    errores, _ = comprueba(salida)
+    assert [e.split()[1] for e in errores] == ["02-arquitectura.md:5", "02-arquitectura.md:6"], errores
+
+
+def test_aplicacion_y_site_homonimos(tmp_path):
+    """La forma real de F6 (Codex, 7-nov): la aplicación va en «aplicacion», no en «objetos», y su ficha es la que
+    escribe build_annex.py (anexo/application/<prefijo>.md); el site se llama igual y está en «objetos». Cada
+    evidencia vale con la ficha de su tipo y no con la del otro."""
+    app = "DEM Gestión de Solicitudes"
+    filas = [("application", "./anexo/application/DEM.md"), ("site", "./anexo/site/DEM_Gestion.md"),
+             ("application", "./anexo/site/DEM_Gestion.md"), ("site", "./anexo/application/DEM.md")]
+    texto = "# Arquitectura\n\n| Objeto | Certeza | Evidencia |\n|---|---|---|\n" + "".join(
+        f"| `{app}` | ✅ | [`mcp:{t}/{app}#x`]({d}) |\n" for t, d in filas)
+    salida = as_is(tmp_path, {"02-arquitectura.md": texto, "anexo/application/DEM.md": f"# {app}\n",
+                              "anexo/site/DEM_Gestion.md": f"# {app} (site)\n"})
+    inv = salida / "datos" / "inventario.json"
+    datos = json.loads(inv.read_text(encoding="utf-8"))
+    datos["objetos"].append({"nombre": app, "tipo": "site", "uuid": "u-s", "anexo": "anexo/site/DEM_Gestion.md", "tambien": []})
+    inv.write_text(json.dumps(datos, ensure_ascii=False), encoding="utf-8")
+    errores, _ = comprueba(salida)
+    assert [e.split()[1] for e in errores] == ["02-arquitectura.md:7", "02-arquitectura.md:8"], errores
+
+
 def test_sin_prefijo_avisa(tmp_path):
     """Sin prefijo en la aplicación, los nombres citados no se pueden comprobar: un aviso lo dice."""
     salida = as_is(tmp_path, {"02-arquitectura.md": "# Arquitectura\n\nLa regla `XYZ_Inventada` calcula el plazo.\n"})

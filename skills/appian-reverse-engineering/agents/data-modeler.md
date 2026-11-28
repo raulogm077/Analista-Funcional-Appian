@@ -33,8 +33,9 @@ De `inventory.json` y las definiciones:
 - **Record types**: nombre, `sourceType`, `tableName`, `fieldCount`, `relationshipCount` y, de la definición, `fields[]` (nombre, tipo, clave), `relationships[]`, `views[]` y `actions[]`.
 - **CDTs y data stores**: si `detail` es `none`, la definición no está disponible: documenta nombre y quién los usa (rol `dependents` y grafo) y márcalos ❓.
 - **Data fabric** (si existe `datafabric.json`): referencia SQL y recuento de filas de cada record type.
+- **Filtros de usuario** (si la extracción trae `listRecordTypeUserFilters` del record type): nombre, tipo y campo sobre el que filtra cada uno, en la ficha del record. Un filtro cuyo nombre no coincide con el campo que filtra se dice tal cual, con su evidencia.
 
-No inventes lo que falte. Lo que la extracción no trae para ningún objeto (nulabilidad, longitudes, índices, data source, filtros de usuario, seguridad por fila, recuentos si no hay data fabric) se dice **una vez** en «Cobertura y límites»: sin ❓ en cada celda y sin columnas vacías.
+No inventes lo que falte. Lo que la extracción no trae para ningún objeto (nulabilidad, longitudes, índices, data source, filtros de usuario si no está esa herramienta, seguridad por fila, recuentos si no hay data fabric) se dice **una vez** en «Cobertura y límites»: sin ❓ en cada celda y sin columnas vacías.
 
 ### Paso 2. Relaciones
 
